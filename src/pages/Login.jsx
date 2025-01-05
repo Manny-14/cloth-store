@@ -2,7 +2,6 @@ import React from 'react';
 import { ShopContext } from '../context/ShopContext';
 
 const Login = () => {
-  const [currentState, setCurrentState] = React.useState('Login');
   const { theme, navigate } = React.useContext(ShopContext);
 
   const onSubmitHandler = (e) => {
@@ -17,19 +16,9 @@ const Login = () => {
         className="flex flex-col items-center w-[90%] sm:max-w-96 gap-4"
       >
         <div className="inline-flex items-center gap-2 mb-2 mt-10">
-          <p className="prata-regular text-lg">{currentState}</p>
+          <p className="prata-regular text-lg">Login</p>
           <hr className="border-none h-[1.5px] w-8 bg-gray-800" />
         </div>
-        {currentState === 'Login' ? (
-          ''
-        ) : (
-          <input
-            type="text"
-            className="w-full px-3 py-2 border border-gray-800 text-black"
-            placeholder="Full Name"
-            required
-          />
-        )}
         <input
           type="email"
           className="w-full px-3 py-2 border border-gray-800 text-black"
@@ -44,28 +33,22 @@ const Login = () => {
         />
         <div className="w-full flex justify-between text-sm mt-[-10px]">
           <p className="cursor-pointer">Forgot your password?</p>
-          {currentState === 'Login' ? (
             <p
-              onClick={() => setCurrentState('Sign Up')}
+              onClick={(e) => {
+                e.preventDefault();
+                navigate('/signup');
+              }}
               className="cursor-pointer"
             >
               Create account
-            </p>
-          ) : (
-            <p
-              className="cursor-pointer"
-              onClick={() => setCurrentState('Login')}
-            >
-              Login here
-            </p>
-          )}
+          </p>
         </div>
         <button
           className={`${
             theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
           } font-light px-8 py-2 mt-4 rounded`}
         >
-          {currentState === 'Login' ? 'Sign In' : 'Sign Up'}
+          'Sign In'
         </button>
       </form>
     </div>
