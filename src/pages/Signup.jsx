@@ -1,8 +1,9 @@
 import React from 'react'
 import { useState } from 'react';
 import { ShopContext } from '../context/ShopContext';
-import { createEmailAndPasswordUser } from '../../firebase/auth';
+import { doCreateUserWithEmailAndPassword } from '../../firebase/auth';
 import { useAuth } from '../context/authContext';
+import { toast } from 'react-toastify';
 const Signup = () => {
 
     const [user, setUser] = useState({
@@ -27,11 +28,14 @@ const Signup = () => {
     const onSubmitHandler = async (e) => {
         e.preventDefault();
         try {
-            const newUser = await createEmailAndPasswordUser(user.email, user.password);
-            console.log("New user created:", newUser);
+            if (user.password !== user.confirmPassword) {
+                throw new Error("Passwords do not match");
+            }
+            await doCreateUserWithEmailAndPassword(user.email, user.password, user.name);
+            toast.success("User created successfully");
             navigate('/');
         } catch (error) {
-            console.error("Error creating user:", error.code, error.message);
+            toast.error(error.message);
         }
     };
 
