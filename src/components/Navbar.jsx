@@ -1,9 +1,31 @@
 import React from "react";
 import { assets } from "../assets/assets.js";
-import { NavLink, Link, useLocation } from "react-router-dom";
+import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
+import { signOutUser } from "../../firebase/auth.js";
+import { toast } from "react-toastify";
+import { useAuth } from "../context/authContext"
 
 const Navbar = () => {
+
+  const { userLoggedIn } = useAuth();
+  const navigate = useNavigate();
+  const logoutHandler = async() => {
+    try {
+      await signOutUser();
+      toast.success("User signed out successfully");
+      navigate('/login');
+    } catch (error) {
+      console.log("error while signing out:", error);
+      toast.error("An error occured while signing out");
+    }
+  }
+
+  const handleProfileClick = () => {
+    if(!userLoggedIn) {
+      navigate('/login');
+    }
+  }
   const [visible, setVisible] = React.useState(false);
   const { theme, setShowSearch, showSearch, getCartCount } =
     React.useContext(ShopContext);
@@ -82,23 +104,27 @@ const Navbar = () => {
           />
         )}
         <div className="group relative">
-          <Link to="/login">
+          <button onClick={handleProfileClick}>
             <img
               src={assets.profile_icon}
               className={`w-5 min-w-5 cursor-pointer ${iconColor}`}
               alt="profile icon"
             />
-          </Link>
+          </button>
           <div className="group-hover:block hidden absolute dropdown-menu right-0 pt-4">
-            <div
-              className={`flex flex-col items-center gap-2 w-36 py-2  text-gray-500 rounded ${
-                theme === "dark" ? "bg-gray-800" : "bg-slate-100"
-              }`}
-            >
-              <Link to="/login"><p className="cursor-pointer hover:text-black">My Profile</p></Link>
-              <Link to="/orders"><p className="cursor-pointer hover:text-black">Orders</p></Link>
-              <Link to="/login"><p className="cursor-pointer hover:text-black">Logout</p></Link>
-            </div>
+            {
+              userLoggedIn && (
+                <div
+                  className={`flex flex-col items-center gap-2 w-36 py-2  text-gray-500 rounded ${
+                    theme === "dark" ? "bg-gray-800" : "bg-slate-100"
+                  }`}
+                >
+                  <Link to="/login"><p className="cursor-pointer hover:text-black">My Profile</p></Link>
+                  <Link to="/orders"><p className="cursor-pointer hover:text-black">Orders</p></Link>
+                  <Link onClick={logoutHandler} to="/login"><p className="cursor-pointer hover:text-black">Logout</p></Link>
+                </div>
+              )
+            }
           </div>
         </div>
 
