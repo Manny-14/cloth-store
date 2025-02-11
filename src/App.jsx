@@ -16,7 +16,9 @@ import "react-toastify/dist/ReactToastify.css";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
 import AdminPanel from "./pages/AdminPanel";
-import AdminNavBar from "./components/AdminNavBar";
+import AllUsers from "./pages/AllUsers";
+import AllProducts from "./pages/AllProducts";
+import AllOrders from "./pages/AllOrders";
 
 
 const App = () => {
@@ -24,7 +26,6 @@ const App = () => {
     <div className="px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]">
       <ToastContainer position="top-center" autoClose={2800} />
       <Navbar />
-      <AdminNavBar />
       <Searchbar />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -38,7 +39,11 @@ const App = () => {
         <Route path="/place-order" element={<PlaceOrder />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="profile" element={<Profile />} />
-        <Route path="/admin-panel" element={<AdminPanel />} />
+        <Route path="/admin-panel" element={<AdminPanel />} >
+          <Route path="all-users" element={<AllUsers />} />
+          <Route path="all-products" element={<AllProducts />} />
+          <Route path="all-orders" element={<AllOrders />} />
+        </Route>
       </Routes>
       <Footer />
     </div>

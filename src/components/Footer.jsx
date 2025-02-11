@@ -1,5 +1,13 @@
+import { useLocation } from "react-router-dom";
 import ThemeToggleButton from "./ThemeToggleButton";
 const Footer = () => {
+
+  const location = useLocation();
+
+  // Excluding the footer from the admin panel
+  if (location.pathname.startsWith('/admin-panel')) {
+    return null;
+  }
   return (
     <div>
       <div className="flex flex-col sm:grid grid-cols-[3fr_1fr_1fr] gap-14 my-10 mt-15 text-sm">

@@ -10,7 +10,7 @@ const Home = () => {
   const authContext = useAuth();
   return (
     <div>
-      <Hero />
+      {/* <Hero /> */}
       <LatestCollection />
       <BestSeller />
       <OurPolicy />

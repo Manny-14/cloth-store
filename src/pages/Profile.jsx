@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useAuth } from '../context/authContext';
 import { useNavigate } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
@@ -15,7 +15,13 @@ const Profile = () => {
     // display name holds the state of the input field
     const [ displayName, setDisplayName ] = useState(currentUser?.displayName || '');
 
-    const navigate = useNavigate();
+    // use effect to ensure the toast notification shows after the page is rendered
+    useEffect(() => {
+        if (localStorage.getItem('displayNameUpdated') === 'true') {
+            toast.success("Display Name updated successfully");
+            localStorage.removeItem('displayNameUpdated');
+        }
+    }, []);
 
     const onChangeHandler = (e) => {
         const { value } = e.target;
@@ -23,14 +29,16 @@ const Profile = () => {
     }
 
     const onSubmitHandler = async(e) => {
+        e.preventDefault();
         if (displayName === currentUser?.displayName) {
             setOpenUpdateDisplayName(false);
             return;
         }
         try {
             await updateDisplayName(displayName);
-            toast.success("Display Name updated successfully");
-            setOpenUpdateDisplayName(false);
+            // Refreshing the page to make sure changes show after user updates name and use local storage to ensure user views the succcess message after refresh
+            localStorage.setItem('displayNameUpdated', 'true');
+            window.location.reload();
         } catch (error) {
             toast.error("Error updating display name");
         }

@@ -12,10 +12,8 @@ const Navbar = () => {
 
   const location = useLocation();
 
-  const excludedPages = ['/admin-panel']
-
   // Excluding the admin panel from renering the general nav bar
-  if (excludedPages.includes(location.pathname)) {
+  if (location.pathname.startsWith('/admin-panel')) {
     return null;
   }
 
@@ -138,7 +136,7 @@ const Navbar = () => {
                   <Link to="/orders"><p className="cursor-pointer hover:text-black">Orders</p></Link>
                   {
                     currentUser?.role === "ADMIN" && (
-                      <Link to="/admin-panel"><p className="cursor-pointer hover:text-black hidden md:block">Admin Panel</p></Link>
+                      <Link to="/admin-panel/all-users"><p className="cursor-pointer hover:text-black hidden md:block">Admin Panel</p></Link>
                     )
                   }
                   <Link onClick={logoutHandler} to="/login"><p className="cursor-pointer hover:text-black">Logout</p></Link>
