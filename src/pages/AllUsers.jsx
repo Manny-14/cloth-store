@@ -39,11 +39,11 @@ const AllUsers = () => {
           </thead>
           <tbody>
             {users.map((user, index) => (
-              <tr>
+              <tr key={user.id}>
                 <td>{index + 1}</td>
-                <td>{user[1].userName}</td>
-                <td>{user[1].email}</td>
-                <td>{user[1].role}</td>
+                <td>{user.displayName}</td>
+                <td>{user.email}</td>
+                <td>{user.role}</td>
               </tr>
             ))}
           </tbody>

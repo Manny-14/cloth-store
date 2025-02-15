@@ -7,14 +7,21 @@ export async function getAllUsers() {
    try {
         const q = query(collection(db, "users"));
         const querySnapshot = await getDocs(q);
-        const allUsers = [];
+        // collect admin users and general users seperately to concatenate them together
+        const adminUsers = [];
+        const generalUsers = [];
         querySnapshot.forEach((doc) => {
-            allUsers.push([doc.id, doc.data()])
+            // collect user data as an object instead of as a list
+            const userData = { id: doc.id, ...doc.data()};
+            if (userData.role === "ADMIN") {
+                adminUsers.push(userData);
+            } else {
+                generalUsers.push(userData);
+            }
         });
 
-        // pushing users that are admin to the top of the list
-        const sortedUsers = [...allUsers].sort((a, b) => a[1].role.localeCompare(b[1].role));
-        return sortedUsers;
+        const allUsers = [...adminUsers, ...generalUsers]
+        return allUsers
    } catch (error) {
     console.log("Error retrieving users from database", error.code, error.message)
    }
