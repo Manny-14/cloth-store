@@ -47,3 +47,18 @@ body.dark {
     max-height: 44px;
   }
 }
+
+.no-arrows::-webkit-outer-spin-button,
+.no-arrows::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.no-arrows[type=number] {
+    -moz-appearance: textfield;
+}
+
+/** Hide scrollbar */
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+}

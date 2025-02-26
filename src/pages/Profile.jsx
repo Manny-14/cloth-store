@@ -6,6 +6,8 @@ import { MdOutlineCancel } from "react-icons/md";
 import { updateDisplayName } from '../../firebase/user/updateDisplayName';
 import { toast } from 'react-toastify';
 
+
+// TODO: Make adaptive for lightmode
 const Profile = () => {
     const { currentUser } = useAuth();
     console.log("currentUser", currentUser);

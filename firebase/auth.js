@@ -9,7 +9,6 @@ export const doCreateUserWithEmailAndPassword = async (email, password, name) =>
         const user = userCredential.user;
 
         await updateProfile(user, {displayName : name }); // updates the user's display name in firebase authentication
-        // this is different from the user's name in the users collection although they are linked by the same uid
         
         await setDoc(doc(db, "users", user.uid), {
             displayName : name,
