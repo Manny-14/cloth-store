@@ -14,6 +14,11 @@ import Searchbar from "./components/Searchbar";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Signup from "./pages/Signup";
+import Profile from "./pages/Profile";
+import AdminPanel from "./pages/AdminPanel";
+import AllUsers from "./pages/AllUsers";
+import AllProducts from "./pages/AllProducts";
+import AllOrders from "./pages/AllOrders";
 
 
 const App = () => {
@@ -33,6 +38,12 @@ const App = () => {
         <Route path="/signup" element={<Signup />} />
         <Route path="/place-order" element={<PlaceOrder />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="profile" element={<Profile />} />
+        <Route path="/admin-panel" element={<AdminPanel />} >
+          <Route path="all-users" element={<AllUsers />} />
+          <Route path="all-products" element={<AllProducts />} />
+          <Route path="all-orders" element={<AllOrders />} />
+        </Route>
       </Routes>
       <Footer />
     </div>

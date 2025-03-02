@@ -12,7 +12,7 @@ export const doCreateUserWithEmailAndPassword = async (email, password, name) =>
         // this is different from the user's name in the users collection although they are linked by the same uid
         
         await setDoc(doc(db, "users", user.uid), {
-            userName : name,
+            displayName : name,
             email : email,
             role : ROLE.GENERAL
         }); // create a new document in the users collection with the user's uid

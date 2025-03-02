@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { assets } from "../assets/assets.js";
 import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
@@ -8,7 +8,15 @@ import { useAuth } from "../context/authContext"
 
 const Navbar = () => {
 
-  const { userLoggedIn } = useAuth();
+  const { currentUser, userLoggedIn } = useAuth();
+
+  const location = useLocation();
+
+  // Excluding the admin panel from renering the general nav bar
+  if (location.pathname.startsWith('/admin-panel')) {
+    return null;
+  }
+
   const navigate = useNavigate();
   const logoutHandler = async() => {
     try {
@@ -27,9 +35,7 @@ const Navbar = () => {
     }
   }
   const [visible, setVisible] = React.useState(false);
-  const { theme, setShowSearch, showSearch, getCartCount } =
-    React.useContext(ShopContext);
-  const location = useLocation();
+  const { theme, setShowSearch, showSearch, getCartCount } = React.useContext(ShopContext);
 
   // Dynamic classnames for theme
   const textColor = theme === "dark" ? "text-white" : "text-gray-700";
@@ -103,6 +109,13 @@ const Navbar = () => {
             alt="search icon"
           />
         )}
+        {
+          userLoggedIn && (
+            <div  className="hidden md:block">
+              Hello, <br/>{currentUser?.displayName}
+            </div>
+          )
+        }
         <div className="group relative">
           <button onClick={handleProfileClick}>
             <img
@@ -119,8 +132,13 @@ const Navbar = () => {
                     theme === "dark" ? "bg-gray-800" : "bg-slate-100"
                   }`}
                 >
-                  <Link to="/login"><p className="cursor-pointer hover:text-black">My Profile</p></Link>
+                  <Link to="/profile"><p className="cursor-pointer hover:text-black">My Account</p></Link>
                   <Link to="/orders"><p className="cursor-pointer hover:text-black">Orders</p></Link>
+                  {
+                    currentUser?.role === "ADMIN" && (
+                      <Link to="/admin-panel/all-users"><p className="cursor-pointer hover:text-black hidden md:block">Admin Panel</p></Link>
+                    )
+                  }
                   <Link onClick={logoutHandler} to="/login"><p className="cursor-pointer hover:text-black">Logout</p></Link>
                 </div>
               )

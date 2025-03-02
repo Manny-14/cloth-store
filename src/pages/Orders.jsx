@@ -20,7 +20,7 @@ const Orders = () => {
     <div className='orders-container'>
       <div className="border-t pt-16">
         <div className="text-xl text-center">
-          <Title text1="YOUR" text2="ORDER" />
+          <Title text1="YOUR" text2="ORDERS" />
         </div>
         <div>
           {cartData.map((item, index) => {
