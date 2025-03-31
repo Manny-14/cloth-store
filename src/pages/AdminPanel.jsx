@@ -18,6 +18,7 @@ const AdminPanel = () => {
     }, [currentUser])
 
     // Set styling mode for active menu option
+    // TODO: back button does not set active page well, fix
     const [ activePage, setActivePage ] = useState("all-users")
 
     const { theme } = useContext(ShopContext);

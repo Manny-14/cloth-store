@@ -3,9 +3,12 @@ import { getAllUsers } from '../../firebase/user/getAllUsers'
 import Title from '../components/Title'
 import { toast } from 'react-toastify';
 import { use } from 'react';
+import { ShopContext } from '../context/ShopContext';
 
 const AllUsers = () => {
   const [users, setUsers] = useState([]);
+  const { theme } = React.useContext(ShopContext)
+
   useEffect(()=>{
     const fetchUsers = async () => {
       try {
@@ -27,23 +30,23 @@ const AllUsers = () => {
       </div>
 
       {/** All Users table */}
-      <div>
-        <table>
-          <thead>
+      <div className='w-full flex justify-center'>
+        <table className='w-full'>
+          <thead className={`${theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'}`}>
             <tr>
-              <th>S/N</th>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
+              <th className='text-left py-1 px-4'>S/N</th>
+              <th className='text-left py-1 px-4'>Name</th>
+              <th className='text-left py-1 px-4'>Email</th>
+              <th className='text-left py-1 px-4'>Role</th>
             </tr>
           </thead>
           <tbody>
             {users.map((user, index) => (
               <tr key={user.id}>
-                <td>{index + 1}</td>
-                <td>{user.displayName}</td>
-                <td>{user.email}</td>
-                <td>{user.role}</td>
+                <td className='border-l border-y border-gray-700 px-4 py-2'>{index + 1}</td>
+                <td className='border-y border-gray-700 px-4 py-2'>{user.displayName}</td>
+                <td className='border-y border-gray-700 px-4 py-2'>{user.email}</td>
+                <td className='border-y border-r border-gray-700 px-4 py-2'>{user.role}</td>
               </tr>
             ))}
           </tbody>
