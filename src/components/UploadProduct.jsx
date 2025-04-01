@@ -12,7 +12,8 @@ const UploadProduct = ({ closeUploadProduct }) => {
         costPrice : "",
         sellingPrice : "",
         quantity : "",
-        description : ""
+        description : "",
+        images : []
     })
 
 
