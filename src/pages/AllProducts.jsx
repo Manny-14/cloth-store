@@ -20,6 +20,8 @@ const AllProducts = () => {
           <UploadProduct closeUploadProduct={closeUploadProduct}/>
         )
       }
+
+      {/** TODO: remove this when modal is being displayed */}
       <IoMdAddCircleOutline  className='text-6xl absolute right-0 bottom-10 hover:scale-110 cursor-pointer' onClick={()=>setOpenUploadProduct(true)}/>
     </div>
   )

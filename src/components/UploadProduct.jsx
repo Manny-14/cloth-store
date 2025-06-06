@@ -3,6 +3,8 @@ import { IoMdClose } from "react-icons/io";
 import { CiImageOn } from "react-icons/ci";
 import { ShopContext } from '../context/ShopContext';
 import { toast } from 'react-toastify';
+import uploadImage from '../helper/cloudinary';
+import { uploadProduct } from '../../firebase/products/uploadProduct';
 
 const UploadProduct = ({ closeUploadProduct }) => {
 
@@ -23,39 +25,82 @@ const UploadProduct = ({ closeUploadProduct }) => {
     }
 
     const [uploadedImages, setUploadedImages] = useState([])
-    const uploadImage = (e) => {
+    const handleUploadImage = async(e) => {
         const files = Array.from(e.target.files)
         if (uploadedImages.length + files.length > 4) {
             toast.error("You can only uplaod a maximum of 4 images")
             return
         }
-        const imageUrls = files.map(file => URL.createObjectURL(file))
-        setUploadedImages(prev => [...prev, ...imageUrls])
+
+        try {
+            const uploadPromises = files.map(file => uploadImage(file));
+            const cloudinaryResponses = await Promise.all(uploadPromises);
+            console.log("cloudinary link",cloudinaryResponses);
+            const imageURLS = cloudinaryResponses.map(result => result.url);
+            setUploadedImages(prev => [...prev, ...imageURLS]);
+            console.log("Uploaded images", uploadedImages)
+        } catch (error) {
+           toast.error("Image Upload Failed"); 
+        }
     }
 
-    const deleteImage = (index) => {
+    const handleDeleteImage = (index) => {
         console.log("Uploaded Images", uploadedImages)
         setUploadedImages((prev) => prev.filter((_, i) => i !== index))
+        // TODO: delete the file from cloudinary as well
     }
 
-    const replaceImage = (index, e) => {
+    const handleReplaceImage = async(index, e) => {
         const image = e.target.files[0]
         if (image) {
-            setUploadedImages((prev) =>
-                prev.map((img, i) => ( i === index ? URL.createObjectURL(image) : img))
-            )
+            try {
+                // loading state might go here
+                const cloudinaryResponse = await uploadImage(image);
+                const imageURL = cloudinaryResponse.url
+                setUploadedImages((prev) =>
+                    prev.map((img, i) => (i === index ? imageURL : img))
+                );
+            } catch (error) {
+                toast.error("Image replacement failed")
+            }
+        }
+    }
+
+    const handleOnSubmit = async(e) => {
+        e.preventDefault();
+
+        const payload = {...productData, images : [...uploadedImages]};
+        console.log("payload", payload)
+
+        try {
+            await uploadProduct(payload);
+            toast.success("Product Uploaded Successfully");
+            // clear form state:
+            setProductData({
+                productName : "",
+                costPrice : "",
+                sellingPrice : "",
+                quantity : "",
+                description : "",
+                images : []
+            });
+            setUploadedImages([]);
+            // close the modal:
+            closeUploadProduct(); 
+        } catch (error) {
+            toast.error("Failed to upload Product")
         }
     }
 
   return (
     <div className={`${theme === 'light' ? 'bg-slate-200' : 'bg-slate-800'} fixed bg-opacity-50 w-full h-full top-0 left-0 right-0 bottom-0 flex justify-center items-center`}>
-        <div className={`${theme === 'light' ? 'bg-white' : 'bg-black'} p-5 w-full h-full max-w-2xl max-h-[80%] rounded shadow-sm overflow-y-auto`}>
+        <div className={`${theme === 'light' ? 'bg-white' : 'bg-black'} p-5 w-full h-full max-w-2xl max-h-[85%] rounded shadow-sm overflow-y-auto`}>
             <div className='pb-5 flex justify-between items-center'>
                 <h2 className='font-bold text-2xl'>Upload Product</h2>
                 <IoMdClose className='text-3xl cursor-pointer' onClick={closeUploadProduct}/>
             </div>
 
-            <form className='grid gap-2'>
+            <form className='grid gap-2' onSubmit={handleOnSubmit}>
                 <label htmlFor='productName'>Product Name:</label>
                 <input
                     type='text'
@@ -74,6 +119,7 @@ const UploadProduct = ({ closeUploadProduct }) => {
                         type='number'
                         id='costPrice'
                         placeholder='0'
+                        min="0"
                         name='costPrice'
                         value={productData.costPrice}
                         className={`${theme === 'light' ? 'bg-slate-50' : 'bg-slate-900'} border-dashed border-2 rounded p-2 col-start-1 row-start-2 no-arrows`}
@@ -85,6 +131,7 @@ const UploadProduct = ({ closeUploadProduct }) => {
                         type='number'
                         id='sellingPrice'
                         placeholder='0'
+                        min="0"
                         name='sellingPrice'
                         value={productData.sellingPrice}
                         className={`${theme === 'light' ? 'bg-slate-50' : 'bg-slate-900'} border-dashed border-2 rounded p-2 col-start-2 row-start-2 no-arrows`}
@@ -97,6 +144,7 @@ const UploadProduct = ({ closeUploadProduct }) => {
                     type='number'
                     id='quantity'
                     placeholder='0'
+                    min="0"
                     name='quantity'
                     value={productData.quantity}
                     className={`${theme === 'light' ? 'bg-slate-50' : 'bg-slate-900'} border-dashed border-2 rounded p-2 no-arrows`}
@@ -112,7 +160,7 @@ const UploadProduct = ({ closeUploadProduct }) => {
                                 accept='image/*'
                                 id='productImage'
                                 name='productImage'
-                                onChange={uploadImage}
+                                onChange={handleUploadImage}
                                 multiple
                                 className='hidden'
                             />
@@ -134,21 +182,21 @@ const UploadProduct = ({ closeUploadProduct }) => {
                                                     alt={el} // probably put a better image description later
                                                     width={80} // I am not sure about this width or height dimensions especially since the images I upload just do whatever when I place it
                                                     height={80}
-                                                    className='rounded-md object-cover'
+                                                    className='rounded-md object-cover w-20 h-20' // TODO: Since I'm using object cover, will put a view image in full screen feature
                                                 />
                                                 <div className='absolute top-0 rounded-md w-full h-full bg-slate-500 opacity-0 hover:opacity-70 flex flex-col gap-2 items-center justify-center'>
                                                     <label className='px-2 bg-white text-black rounded-full text-sm  cursor-pointer hover:scale-105'>
                                                         <input
                                                             type='file'
                                                             accept='image/*'
-                                                            onChange={(e) => replaceImage(index, e)}
+                                                            onChange={(e) => handleReplaceImage(index, e)}
                                                             className='hidden'
                                                         />    
                                                             Replace</label>
                                                     <button 
                                                         type='button'
                                                         className='px-2 bg-white text-black rounded-full text-sm cursor-pointer hover:scale-105' 
-                                                        onClick={() => deleteImage(index)}>Remove</button>
+                                                        onClick={() => handleDeleteImage(index)}>Remove</button>
                                                 </div>
                                             </div>
                                         )
@@ -171,6 +219,8 @@ const UploadProduct = ({ closeUploadProduct }) => {
                     required
                     onChange={handleOnChange}
                 />
+
+                <button type="submit" className={`${theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'} p-2 w-fit mx-auto mt-4 rounded-md`}>Upload Product</button>
             </form>
         </div>
     </div>
