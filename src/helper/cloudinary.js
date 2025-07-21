@@ -1,7 +1,8 @@
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const url = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`
 
-
+// Does not reduce size of images before uploading to cloudinary
+// Have to monitor it to determine if storage limits are reached quickly
 const uploadImage = async(image) => {
 
     const formData = new FormData()
