@@ -46,8 +46,11 @@ const AllProducts = () => {
 
   return (
     <div className="p-4 h-[85vh] relative">
-      <div className="text-xl">
-        <Title text1={"ALL"} text2={"Products"} />
+      {/* Static header and controls */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-xl">
+          <Title text1={"ALL"} text2={"Products"} />
+        </div>
       </div>
 
       {openUploadProduct && (
@@ -82,12 +85,13 @@ const AllProducts = () => {
         )}
       </div>
 
+      {/* Fixed upload button */}
       <IoMdAddCircleOutline
-        className="text-6xl absolute right-0 bottom-10 hover:scale-110 cursor-pointer"
+        className="text-6xl fixed right-8 bottom-8 z-50 hover:scale-110 cursor-pointer"
         onClick={() => setOpenUploadProduct(true)}
       />
     </div>
   );
-};
+}
 
 export default AllProducts;
