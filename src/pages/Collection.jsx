@@ -1,70 +1,73 @@
-import React from "react";
-import { ShopContext } from "../context/ShopContext";
+import React, { useEffect, useState } from "react";
 import { assets } from "../assets/assets";
 import Title from "../components/Title";
 import ProductItem from "../components/ProductItem";
+import { getAllProducts } from "../../firebase/products/getAllProducts";
 
 const Collection = () => {
-  const { products, theme, search, showSearch } = React.useContext(ShopContext);
-  const [showFilter, setShowFilter] = React.useState(false);
-  const [filterProducts, setFilterProducts] = React.useState([]);
-  const [category, setCategory] = React.useState([]);
-  const [subCategory, setSubCategory] = React.useState([]);
-  const [sortType, setSortType] = React.useState(["relevant"]);
+  const [products, setProducts] = useState([]);
+  const [theme, setTheme] = useState("light");
+  const [search, setSearch] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterProducts, setFilterProducts] = useState([]);
+  const [category, setCategory] = useState([]);
+  const [type, setType] = useState([]);
+  const [sortType, setSortType] = useState("relevant");
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        const data = await getAllProducts();
+        setProducts(data);
+      } catch (err) {
+        setProducts([]);
+      }
+    }
+    fetchProducts();
+  }, []);
 
+  // TODO: Fix category filter for 'women' (currently saved as 'female' in database)
+  // TODO: Fix image rendering for different image sizes
+  
   const toggleCategory = (e) => {
-    if (category.includes(e.target.value)) {
-      setCategory((prev) => prev.filter((item) => item !== e.target.value));
-    } else {
-      setCategory((prev) => [...prev, e.target.value]);
-    }
+    const value = e.target.value;
+    setCategory((prev) =>
+      prev.includes(value)
+        ? prev.filter((item) => item !== value)
+        : [...prev, value]
+    );
   };
 
-  const toggleSubCategory = (e) => {
-    if (subCategory.includes(e.target.value)) {
-      setSubCategory((prev) => prev.filter((item) => item !== e.target.value));
-    } else {
-      setSubCategory((prev) => [...prev, e.target.value]);
-    }
+  const toggleType = (e) => {
+    const value = e.target.value;
+    setType((prev) =>
+      prev.includes(value)
+        ? prev.filter((item) => item !== value)
+        : [...prev, value]
+    );
   };
 
-  const applyFilters = () => {
-    let productsCopy = [...products];
-
+  useEffect(() => {
+    let filtered = [...products];
     if (showSearch && search) {
-      productsCopy = productsCopy.filter((item) => item.name.toLowerCase().includes(search.toLowerCase()));
+      filtered = filtered.filter((item) =>
+        (item.productName || "").toLowerCase().includes(search.toLowerCase())
+      );
     }
     if (category.length > 0) {
-      productsCopy = productsCopy.filter((item) => category.includes(item.category));
+      filtered = filtered.filter((item) => category.includes(item.category));
     }
-    if (subCategory.length > 0) {
-      productsCopy = productsCopy.filter((item) => subCategory.includes(item.subCategory));
+    if (type.length > 0) {
+      filtered = filtered.filter((item) => type.includes(item.type));
     }
-    setFilterProducts(productsCopy);
-  };
-
-  const sortProducts = () => {
-    let filterProductsCopy = [...filterProducts];
-    switch (sortType) {
-      case "low-high":
-        setFilterProducts(filterProductsCopy.sort((a, b) => a.price - b.price));
-        break;
-      case "high-low":
-        setFilterProducts(filterProductsCopy.sort((a, b) => b.price - a.price));
-        break;
-      default:
-        applyFilters();
-        break;
+    // Sorting
+    if (sortType === "low-high") {
+      filtered = filtered.sort((a, b) => Number(a.sellingPrice) - Number(b.sellingPrice));
+    } else if (sortType === "high-low") {
+      filtered = filtered.sort((a, b) => Number(b.sellingPrice) - Number(a.sellingPrice));
     }
-  };
-
-  React.useEffect(() => {
-    applyFilters();
-  }, [category, subCategory, search, showSearch]);
-
-  React.useEffect(() => {
-    sortProducts();
-  }, [sortType]);
+    setFilterProducts(filtered);
+  }, [products, category, type, search, showSearch, sortType]);
 
   return (
     <div className="flex flex-col sm:flex-row gap-1 sm:gap-10 pt-10 border-t">
@@ -89,12 +92,12 @@ const Collection = () => {
           } sm:block`}
         >
           <p className="mb-3 text-sm font-medium">CATEGORIES</p>
-          <div className={`flex flex-col gap-2 text-sm font-light ${theme === "light" ? "text-gray-700" : "text-white"}}`}>
+          <div className={`flex flex-col gap-2 text-sm font-light ${theme === "light" ? "text-gray-700" : "text-white"}`}>
             <p className="flex gap-2">
               <input
                 type="checkbox"
                 className="w-3"
-                value={"Men"}
+                value={"men"}
                 onChange={toggleCategory}
               />{" "}
               Men
@@ -103,7 +106,7 @@ const Collection = () => {
               <input
                 type="checkbox"
                 className="w-3"
-                value={"Women"}
+                value={"women"}
                 onChange={toggleCategory}
               />{" "}
               Women
@@ -112,7 +115,7 @@ const Collection = () => {
               <input
                 type="checkbox"
                 className="w-3"
-                value={"Kids"}
+                value={"kids"}
                 onChange={toggleCategory}
               />{" "}
               Kids
@@ -120,20 +123,20 @@ const Collection = () => {
           </div>
         </div>
 
-        {/* Sub-Category Filter */}
+        {/* Type Filter */}
         <div
           className={`border border-gray-300 pl-5 py-3 my-5 ${
             showFilter ? "" : "hidden"
           } sm:block`}
         >
           <p className="mb-3 text-sm font-medium">TYPE</p>
-          <div className={`flex flex-col gap-2 text-sm font-light ${theme === "light" ? "text-gray-700" : "text-white"}}`}>
+          <div className={`flex flex-col gap-2 text-sm font-light ${theme === "light" ? "text-gray-700" : "text-white"}`}>
             <p className="flex gap-2">
               <input
                 type="checkbox"
                 className="w-3"
-                value={"Topwear"}
-                onChange={toggleSubCategory}
+                value={"topwear"}
+                onChange={toggleType}
               />
               Topwear
             </p>
@@ -141,8 +144,8 @@ const Collection = () => {
               <input
                 type="checkbox"
                 className="w-3"
-                value={"Bottomwear"}
-                onChange={toggleSubCategory}
+                value={"bottomwear"}
+                onChange={toggleType}
               />
               Bottomwear
             </p>
@@ -150,8 +153,8 @@ const Collection = () => {
               <input
                 type="checkbox"
                 className="w-3"
-                value={"Winterwear"}
-                onChange={toggleSubCategory}
+                value={"winterwear"}
+                onChange={toggleType}
               />
               Winterwear
             </p>
@@ -178,11 +181,11 @@ const Collection = () => {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6">
           {filterProducts.map((item, index) => (
             <ProductItem
-              key={index}
-              id={item._id}
-              image={item.image}
-              name={item.name}
-              price={item.price}
+              key={item.id || index}
+              id={item.id}
+              image={item.images}
+              name={item.productName}
+              price={item.sellingPrice}
             />
           ))}
         </div>

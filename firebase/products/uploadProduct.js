@@ -3,10 +3,16 @@ import { db } from "../firebase";
 
 export async function uploadProduct(productData) {
     try {
-        // New document reference with auto ID in 'prodcuts' collection
+        // New document reference with auto ID in 'products' collection
         const newProductRef = doc(collection(db, "products"));
 
-        await setDoc(newProductRef, productData);
+        // Add timestamp field
+        const productWithTimestamp = {
+            ...productData,
+            timestamp: new Date().toISOString(),
+        };
+
+        await setDoc(newProductRef, productWithTimestamp);
 
         return newProductRef.id;
     } catch (error) {
