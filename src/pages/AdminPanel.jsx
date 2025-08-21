@@ -84,12 +84,7 @@ const AdminPanel = () => {
         <Outlet />
       </main>
 
-       {/** To give the admin opportunity to switch modes if needed */}
-       <div className="flex justify-center items-center relative">
-        <div className="absolute left-0">
-          <ThemeToggleButton/>
-        </div>
-      </div>
+      {/* ThemeToggleButton removed. Dark mode functionality is still available, but the button is hidden. */}
     </div>
   )
 }

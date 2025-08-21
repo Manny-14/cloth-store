@@ -40,10 +40,8 @@ const Footer = () => {
           </ul>
         </div>
       </div>
+      {/* ThemeToggleButton removed. Dark mode functionality is still available, but the button is hidden. */}
       <div className="flex justify-center items-center relative">
-        <div className="absolute left-0">
-          <ThemeToggleButton/>
-        </div>
         <p className="py-4 text-sm text-center">
           © Copyrights 2024 @ CLOTHIFY - All Rights Reserved.
         </p>
