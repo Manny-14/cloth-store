@@ -1,6 +1,6 @@
 export const productCategory = [
-  { id: 1, label: "Male", value: "men" },
-  { id: 2, label: "Female", value: "female" },
+  { id: 1, label: "Men", value: "men" },
+  { id: 2, label: "Women", value: "women" },
   { id: 3, label: "Unisex", value: "female" },
   { id: 4, label: "Kids", value: "kids" },
 ];
