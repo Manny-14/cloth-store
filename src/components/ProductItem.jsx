@@ -18,10 +18,10 @@ const ProductItem = ({ id, image, name, price }) => {
         theme === "light" ? "text-gray-700" : "text-white"
       } cursor-pointer`}
     >
-      <div className="overflow-hidden">
+            <div className="overflow-hidden aspect-[8/9]">
         <img
           src={image[0]}
-          className="hover:scale-105 transition ease-in-out"
+          className="w-full h-full object-cover hover:scale-105 transition ease-in-out"
           alt="Product Image"
         />
       </div>

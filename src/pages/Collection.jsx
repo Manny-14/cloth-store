@@ -26,7 +26,6 @@ const Collection = () => {
     fetchProducts();
   }, []);
 
-  // TODO: Fix category filter for 'women' (currently saved as 'female' in database)
   // TODO: Fix image rendering for different image sizes
   
   const toggleCategory = (e) => {
