@@ -74,17 +74,18 @@ const AdminPanel = () => {
           }
         </div>
 
-        {/** Exit Admin panel */}
-        <Link to="/" className='text-3xl font-bold'>
-          <IoReturnUpBack />
-        </Link>
+        {/** Exit Admin panel + Theme toggle */}
+        <div className='flex items-center gap-4'>
+          <ThemeToggleButton />
+          <Link to="/" className='text-3xl font-bold'>
+            <IoReturnUpBack />
+          </Link>
+        </div>
       </nav>
 
       <main>
         <Outlet />
       </main>
-
-      {/* ThemeToggleButton removed. Dark mode functionality is still available, but the button is hidden. */}
     </div>
   )
 }

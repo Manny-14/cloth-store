@@ -6,16 +6,18 @@ import { ShopContext } from "../context/ShopContext"
 const Contact = () => {
 
   const {theme } = React.useContext(ShopContext);
+  const borderColor = theme === "dark" ? "border-gray-800" : "border-gray-200";
+  const textColor = theme === "dark" ? "text-gray-300" : "text-gray-700";
   return (
-    <div>
+    <div className="transition-colors duration-300">
 
-      <div className="text-center text-lg pt-10 border-t">
+      <div className={`text-center text-lg pt-10 border-t ${borderColor}`}>
         <Title text1={"CONTACT"} text2={"US"}/>
       </div>
 
       <div className="my-10 flex flex-col justify-center md:flex-row gap-10 mb-28">
         <img src={assets.contact_img} alt="contact us image" className="w-full md:max-w-[480px]"/>
-        <div className="flex flex-col my-10 text-lg items-start gap-6">
+        <div className={`flex flex-col my-10 text-lg items-start gap-6 ${textColor}`}>
           {/* <p className="font-semi-bold text-lg">Our Store</p>
           <p className="text-gray-500">54709 Willms Station<br/>Suite 350, Washington, USA</p> */}
           <p className="">Phone Number : +6154797177</p>

@@ -8,6 +8,10 @@
   font-family: "Outfit", sans-serif;
 }
 
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
 .prata-regular {
   font-family: "Prata", serif;
   font-weight: 400;
@@ -55,7 +59,8 @@ body.dark {
 }
 
 .no-arrows[type=number] {
-    -moz-appearance: textfield;
+  appearance: textfield;
+  -moz-appearance: textfield;
 }
 
 /** Hide scrollbar */

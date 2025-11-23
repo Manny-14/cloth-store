@@ -3,10 +3,10 @@ import { assets } from "../assets/assets";
 import Title from "../components/Title";
 import ProductItem from "../components/ProductItem";
 import { getAllProducts } from "../../firebase/products/getAllProducts";
+import { ShopContext } from "../context/ShopContext";
 
 const Collection = () => {
   const [products, setProducts] = useState([]);
-  const [theme, setTheme] = useState("light");
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
@@ -45,6 +45,8 @@ const Collection = () => {
         : [...prev, value]
     );
   };
+
+  const { theme } = React.useContext(ShopContext);
 
   useEffect(() => {
     let filtered = [...products];

@@ -5,12 +5,16 @@ import NewsletterBox from "../components/NewsletterBox"
 import { useAuth } from "../context/authContext"
 import { useEffect, useState } from "react";
 import { getAllProducts } from "../../firebase/products/getAllProducts";
+import React from "react";
+import { ShopContext } from "../context/ShopContext";
 
 const Home = () => {
   const authContext = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { theme } = React.useContext(ShopContext);
+  const textColor = theme === "dark" ? "text-gray-100" : "text-gray-900";
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -34,7 +38,7 @@ const Home = () => {
   const latestProducts = products.slice(0, 10);
 
   return (
-    <div>
+    <div className={`space-y-10 transition-colors ${textColor}`}>
       {/* <Hero /> */}
       <LatestCollection products={latestProducts} loading={loading} error={error} />
       {/* <BestSeller /> removed for now */}

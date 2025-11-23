@@ -5,6 +5,7 @@ import { ShopContext } from "../context/ShopContext";
 import { signOutUser } from "../../firebase/auth.js";
 import { toast } from "react-toastify";
 import { useAuth } from "../context/authContext"
+import ThemeToggleButton from "./ThemeToggleButton";
 
 const Navbar = () => {
 
@@ -100,7 +101,7 @@ const Navbar = () => {
         </NavLink>
       </ul>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-3 sm:gap-6">
         {location.pathname === "/collection" && (
           <img
             src={assets.search_icon}
@@ -152,10 +153,19 @@ const Navbar = () => {
             className={`w-5 min-w-5 cursor-pointer ${iconColor}`}
             alt="cart icon"
           />
-          <p className="absolute right-[-0.313rem] bottom-[-0.313rem] w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[0.5rem]">
+          <p
+            className={`absolute right-[-0.313rem] bottom-[-0.313rem] w-4 text-center leading-4 aspect-square rounded-full text-[0.5rem] ${
+              theme === "dark"
+                ? "bg-white text-black"
+                : "bg-black text-white"
+            }`}
+          >
             {getCartCount()}
           </p>
         </Link>
+        <div className="hidden sm:block">
+          <ThemeToggleButton variant="icon" />
+        </div>
 
         <img
           onClick={() => setVisible(true)}
@@ -182,6 +192,9 @@ const Navbar = () => {
               alt="dropdown icon"
             />
             <p>Back</p>
+          </div>
+          <div className="px-6 pb-4">
+            <ThemeToggleButton variant="icon" />
           </div>
           <NavLink
             onClick={() => setVisible(false)}

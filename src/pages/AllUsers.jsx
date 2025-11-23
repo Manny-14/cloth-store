@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react'
 import { getAllUsers } from '../../firebase/user/getAllUsers'
 import Title from '../components/Title'
 import { toast } from 'react-toastify';
-import { use } from 'react';
 import { ShopContext } from '../context/ShopContext';
 
 const AllUsers = () => {
   const [users, setUsers] = useState([]);
   const { theme } = React.useContext(ShopContext)
+  const borderColor = theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+  const textColor = theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
 
   useEffect(()=>{
     const fetchUsers = async () => {
@@ -43,10 +44,10 @@ const AllUsers = () => {
           <tbody>
             {users.map((user, index) => (
               <tr key={user.id}>
-                <td className='border-l border-y border-gray-700 px-4 py-2'>{index + 1}</td>
-                <td className='border-y border-gray-700 px-4 py-2'>{user.displayName}</td>
-                <td className='border-y border-gray-700 px-4 py-2'>{user.email}</td>
-                <td className='border-y border-r border-gray-700 px-4 py-2'>{user.role}</td>
+                <td className={`border-l border-y px-4 py-2 ${borderColor} ${textColor}`}>{index + 1}</td>
+                <td className={`border-y px-4 py-2 ${borderColor} ${textColor}`}>{user.displayName}</td>
+                <td className={`border-y px-4 py-2 ${borderColor} ${textColor}`}>{user.email}</td>
+                <td className={`border-y border-r px-4 py-2 ${borderColor} ${textColor}`}>{user.role}</td>
               </tr>
             ))}
           </tbody>

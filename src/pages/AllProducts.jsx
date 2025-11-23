@@ -5,6 +5,7 @@ import UploadProduct from "../components/UploadProduct";
 import ProductCard from "../components/ProductCard";
 import EditProduct from "../components/EditProduct";
 import { getAllProducts } from "../../firebase/products/getAllProducts";
+import { ShopContext } from "../context/ShopContext";
 
 const AllProducts = () => {
   const [openUploadProduct, setOpenUploadProduct] = useState(false);
@@ -13,6 +14,9 @@ const AllProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { theme } = React.useContext(ShopContext);
+  const isDark = theme === "dark";
+  const mutedText = isDark ? "text-gray-400" : "text-gray-500";
 
   const handleEdit = (product) => {
     setEditProductData(product);
@@ -45,7 +49,7 @@ const AllProducts = () => {
   }, []);
 
   return (
-    <div className="p-4 h-[85vh] relative">
+  <div className="p-4 h-[85vh] relative transition-colors duration-300">
       {/* Static header and controls */}
       <div className="flex items-center justify-between mb-4">
         <div className="text-xl">
@@ -66,7 +70,9 @@ const AllProducts = () => {
 
       <div className="my-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {loading ? (
-          <div className="col-span-full text-center text-gray-500 text-lg py-10">Loading...</div>
+          <div className={`col-span-full text-center ${mutedText} text-lg py-10`}>
+            Loading...
+          </div>
         ) : error ? (
           <div className="col-span-full text-center text-red-500 text-lg py-10">{error}</div>
         ) : products && products.length > 0 ? (
@@ -76,10 +82,11 @@ const AllProducts = () => {
               product={product}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              theme={theme}
             />
           ))
         ) : (
-          <div className="col-span-full text-center text-gray-500 text-lg py-10">
+          <div className={`col-span-full text-center ${mutedText} text-lg py-10`}>
             No products found.
           </div>
         )}
@@ -87,7 +94,9 @@ const AllProducts = () => {
 
       {/* Fixed upload button */}
       <IoMdAddCircleOutline
-        className="text-6xl fixed right-8 bottom-8 z-50 hover:scale-110 cursor-pointer"
+        className={`text-6xl fixed right-8 bottom-8 z-50 hover:scale-110 cursor-pointer ${
+          isDark ? "text-white" : "text-gray-900"
+        }`}
         onClick={() => setOpenUploadProduct(true)}
       />
     </div>

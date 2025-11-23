@@ -4,16 +4,19 @@ import Title from "./Title";
 import ProductItem from "./ProductItem";
 
 const BestSeller = () => {
-  const { products } = React.useContext(ShopContext);
+  const { products, theme } = React.useContext(ShopContext);
   const bestSellers = React.useMemo(() => {
     return products.filter((item) => item.bestseller).slice(0, 5);
   }, [products]);
+  const descriptionColor = theme === "dark" ? "text-gray-300" : "text-gray-600";
 
   return (
   <div className="my-10">
     <div className="text-center text-3xl py-8">
         <Title text1={"BEST"} text2={"SELLERS"}/>  
-        <p className="w-3/4 m-auto text-xs sm:text-sm md:text-base text-gray-600">
+        <p
+          className={`w-3/4 m-auto text-xs sm:text-sm md:text-base ${descriptionColor}`}
+        >
             These are our best selling products.
         </p>
     </div>

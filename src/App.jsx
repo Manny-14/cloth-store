@@ -1,3 +1,4 @@
+import React from "react";
 import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Collection from "./pages/Collection";
@@ -19,12 +20,16 @@ import AdminPanel from "./pages/AdminPanel";
 import AllUsers from "./pages/AllUsers";
 import AllProducts from "./pages/AllProducts";
 import AllOrders from "./pages/AllOrders";
+import { ShopContext } from "./context/ShopContext";
 
 
 const App = () => {
+  const { theme } = React.useContext(ShopContext);
   return (
-    <div className="px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]">
-      <ToastContainer position="top-center" autoClose={2800} />
+    <div
+      className={`min-h-screen px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] transition-colors duration-300 bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100`}
+    >
+      <ToastContainer position="top-center" autoClose={2800} theme={theme} />
       <Navbar />
       <Searchbar />
       <Routes>

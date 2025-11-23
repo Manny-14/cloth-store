@@ -90,7 +90,17 @@ const ShopContextProvider = (props) => {
   };
 
   React.useEffect(() => {
-    document.body.className = theme;
+    const root = document.documentElement;
+    const body = document.body;
+
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+
+    body.classList.remove("light", "dark");
+    body.classList.add(theme);
   }, [theme]);
 
   const value = {
