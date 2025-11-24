@@ -76,7 +76,7 @@ const AdminPanel = () => {
 
         {/** Exit Admin panel + Theme toggle */}
         <div className='flex items-center gap-4'>
-          <ThemeToggleButton />
+          <ThemeToggleButton variant="icon" />
           <Link to="/" className='text-3xl font-bold'>
             <IoReturnUpBack />
           </Link>
