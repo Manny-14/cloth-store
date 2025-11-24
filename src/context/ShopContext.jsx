@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 import { getAllProducts } from "../../firebase/products/getAllProducts";
 import { products as seedProducts } from "../assets/assets";
 
+const DEFAULT_SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL"];
+
 export const ShopContext = React.createContext();
 
 const ShopContextProvider = (props) => {
@@ -15,6 +17,25 @@ const ShopContextProvider = (props) => {
 
   const currency = "$";
   const delivery_fee = 10;
+  const sizeFieldMap = React.useMemo(
+    () => ({
+      XS: "extraSmallQuantity",
+      S: "smallQuantity",
+      SM: "smallQuantity",
+      SMALL: "smallQuantity",
+      M: "mediumQuantity",
+      MEDIUM: "mediumQuantity",
+      L: "largeQuantity",
+      LARGE: "largeQuantity",
+      XL: "xlQuantity",
+      "X-L": "xlQuantity",
+      XXL: "xxlQuantity",
+      "2XL": "xxlQuantity",
+      "XX-LARGE": "xxlQuantity",
+    }),
+    []
+  );
+  const canonicalSizeOrder = React.useMemo(() => DEFAULT_SIZE_ORDER, []);
   const [products, setProducts] = React.useState(() =>
     seedProducts.map((product) => ({
       ...product,
@@ -42,34 +63,165 @@ const ShopContextProvider = (props) => {
 
   const navigate = useNavigate();
 
+  const normalizeSizeLabel = React.useCallback((size) => {
+    if (!size) return "";
+    return String(size).trim().toUpperCase();
+  }, []);
+
+  const resolveSizeField = React.useCallback(
+    (size) => {
+      const normalized = normalizeSizeLabel(size);
+      return sizeFieldMap[normalized] || null;
+    },
+    [normalizeSizeLabel, sizeFieldMap]
+  );
+
+  const sanitizeCartData = React.useCallback((cartData) => {
+    const sanitized = {};
+    Object.entries(cartData || {}).forEach(([productId, sizes]) => {
+      const filteredSizes = Object.entries(sizes || {}).reduce(
+        (acc, [size, quantity]) => {
+          const parsed = parseNumber(quantity);
+          if (parsed > 0) {
+            acc[size] = parsed;
+          }
+          return acc;
+        },
+        {}
+      );
+
+      if (Object.keys(filteredSizes).length > 0) {
+        sanitized[productId] = filteredSizes;
+      }
+    });
+
+    return sanitized;
+  }, [parseNumber]);
+
+  const commitCartData = React.useCallback(
+    (cartData) => {
+      const sanitized = sanitizeCartData(cartData);
+      setCartItems(sanitized);
+      localStorage.setItem("cartItems", JSON.stringify(sanitized));
+    },
+    [sanitizeCartData]
+  );
+
+  const findProductById = React.useCallback(
+    (itemId) =>
+      products.find((product) => product._id === itemId || product.id === itemId) || null,
+    [products]
+  );
+
+  const getSizeQuantity = React.useCallback(
+    (product, size) => {
+      if (!product) return 0;
+      const normalizedSize = normalizeSizeLabel(size);
+      const sizeField = resolveSizeField(normalizedSize);
+
+      if (sizeField) {
+        const value = product[sizeField];
+        if (value !== undefined && value !== null) {
+          return parseNumber(value);
+        }
+      }
+
+      if (
+        product?.sizes &&
+        !Array.isArray(product.sizes) &&
+        product.sizes[normalizedSize] !== undefined
+      ) {
+        return parseNumber(product.sizes[normalizedSize]);
+      }
+
+      if (normalizedSize === "XL" && product.extraLargeQuantity !== undefined) {
+        return parseNumber(product.extraLargeQuantity);
+      }
+
+      if (normalizedSize === "XS" && product.extraSmallQuantity !== undefined) {
+        return parseNumber(product.extraSmallQuantity);
+      }
+
+      if (!normalizedSize) {
+        return parseNumber(product.totalQuantity ?? product.quantity ?? 0);
+      }
+
+      return 0;
+    },
+    [normalizeSizeLabel, resolveSizeField, parseNumber]
+  );
+
+  const getAvailableSizes = React.useCallback(
+    (product, { includeCurrentSize } = {}) => {
+      if (!product) return [];
+      const normalizedCurrent = normalizeSizeLabel(includeCurrentSize);
+      const baseSizes =
+        Array.isArray(product.sizes) && product.sizes.length
+          ? product.sizes
+          : canonicalSizeOrder;
+      const seen = new Set();
+      return baseSizes
+        .map((size) => normalizeSizeLabel(size))
+        .filter((size) => {
+          if (!size || seen.has(size)) {
+            return false;
+          }
+          seen.add(size);
+          const qty = getSizeQuantity(product, size);
+          if (qty > 0) {
+            return true;
+          }
+          return normalizedCurrent && normalizedCurrent === size;
+        });
+    },
+    [canonicalSizeOrder, getSizeQuantity, normalizeSizeLabel]
+  );
+
   const addToCart = async (itemId, size) => {
-    if (!size) {
+    const normalizedSize = normalizeSizeLabel(size);
+    if (!normalizedSize) {
       toast.error("Please select the product size");
       return;
     }
 
-    const productExists = products.some(
-      (product) => product._id === itemId || product.id === itemId
-    );
+    const product = findProductById(itemId);
 
-    if (!productExists) {
+    if (!product) {
       toast.error("Product unavailable. Please refresh and try again.");
       return;
     }
 
-    let cartData = structuredClone(cartItems);
-    if (cartData[itemId]) {
-      if (cartData[itemId][size]) {
-        cartData[itemId][size] += 1;
-      } else {
-        cartData[itemId][size] = 1;
-      }
-    } else {
-      cartData[itemId] = {};
-      cartData[itemId][size] = 1;
+    if (isSoldOut(product)) {
+      toast.error("This product is sold out.");
+      return;
     }
-    setCartItems(cartData);
-    localStorage.setItem("cartItems", JSON.stringify(cartData));
+
+    const sizeStock = getSizeQuantity(product, normalizedSize);
+
+    if (sizeStock <= 0) {
+      toast.error(`Size ${normalizedSize} is sold out.`);
+      return;
+    }
+
+    const currentQuantity = cartItems[itemId]?.[normalizedSize] || 0;
+
+    if (currentQuantity >= sizeStock) {
+      toast.info(
+        `You've reached the limit for size ${normalizedSize}. Available stock: ${sizeStock}.`
+      );
+      return;
+    }
+
+    const updatedCart = structuredClone(cartItems);
+
+    if (!updatedCart[itemId]) {
+      updatedCart[itemId] = {};
+    }
+
+    updatedCart[itemId][normalizedSize] = currentQuantity + 1;
+
+    commitCartData(updatedCart);
+    toast.success("Added to cart");
   };
 
   const getCartCount = () => {
@@ -85,11 +237,125 @@ const ShopContextProvider = (props) => {
   };
 
   const updateQuantity = async (itemId, size, quantity) => {
-    let cartData = structuredClone(cartItems);
+    const normalizedSize = normalizeSizeLabel(size);
+    const requestedQuantity = parseNumber(quantity);
+    const product = findProductById(itemId);
 
-    cartData[itemId][size] = quantity;
+    if (!product) {
+      // Remove orphaned cart entries silently
+      const nextCart = structuredClone(cartItems);
+      delete nextCart[itemId];
+      commitCartData(nextCart);
+      toast.warn("Product no longer available and was removed from your cart.");
+      return;
+    }
 
-    setCartItems(cartData);
+    const sizeStock = getSizeQuantity(product, normalizedSize);
+
+    if (sizeStock <= 0) {
+      const nextCart = structuredClone(cartItems);
+      if (nextCart[itemId]) {
+        delete nextCart[itemId][normalizedSize];
+      }
+      commitCartData(nextCart);
+      toast.error(`Size ${normalizedSize} is sold out and was removed from your cart.`);
+      return;
+    }
+
+    const safeQuantity = Math.max(0, Math.min(requestedQuantity, sizeStock));
+
+    const nextCart = structuredClone(cartItems);
+    if (!nextCart[itemId]) {
+      nextCart[itemId] = {};
+    }
+
+    if (safeQuantity === 0) {
+      delete nextCart[itemId][normalizedSize];
+    } else {
+      nextCart[itemId][normalizedSize] = safeQuantity;
+    }
+
+    commitCartData(nextCart);
+
+    if (requestedQuantity > sizeStock) {
+      toast.info(`Only ${sizeStock} units available for size ${normalizedSize}.`);
+    }
+  };
+
+  const changeCartItemSize = async (itemId, oldSize, newSize) => {
+    const normalizedOld = normalizeSizeLabel(oldSize);
+    const normalizedNew = normalizeSizeLabel(newSize);
+
+    if (!normalizedOld || !normalizedNew) {
+      toast.error("Select a valid size");
+      return;
+    }
+
+    if (normalizedOld === normalizedNew) {
+      return;
+    }
+
+    const product = findProductById(itemId);
+
+    if (!product) {
+      const nextCart = structuredClone(cartItems);
+      delete nextCart[itemId];
+      commitCartData(nextCart);
+      toast.warn("Product no longer available and was removed from your cart.");
+      return;
+    }
+
+    const newSizeStock = getSizeQuantity(product, normalizedNew);
+
+    if (newSizeStock <= 0) {
+      toast.error(`Size ${normalizedNew} is sold out.`);
+      return;
+    }
+
+    const currentQuantity = cartItems[itemId]?.[normalizedOld] || 0;
+    if (currentQuantity <= 0) {
+      toast.warn("No quantity to move for this size.");
+      return;
+    }
+
+    const existingNewQuantity = cartItems[itemId]?.[normalizedNew] || 0;
+    const maxAdditional = Math.max(0, newSizeStock - existingNewQuantity);
+
+    if (maxAdditional <= 0) {
+      toast.info(`All available stock for size ${normalizedNew} is already in your cart.`);
+      return;
+    }
+
+    const transferQuantity = Math.min(currentQuantity, maxAdditional);
+    const leftoverQuantity = currentQuantity - transferQuantity;
+
+    const nextCart = structuredClone(cartItems);
+    if (!nextCart[itemId]) {
+      nextCart[itemId] = {};
+    }
+
+    nextCart[itemId][normalizedNew] =
+      (nextCart[itemId][normalizedNew] || 0) + transferQuantity;
+
+    if (leftoverQuantity > 0) {
+      nextCart[itemId][normalizedOld] = leftoverQuantity;
+    } else {
+      delete nextCart[itemId][normalizedOld];
+    }
+
+    if (Object.keys(nextCart[itemId]).length === 0) {
+      delete nextCart[itemId];
+    }
+
+    commitCartData(nextCart);
+
+    if (transferQuantity < currentQuantity) {
+      toast.info(
+        `Only ${transferQuantity} items moved due to stock limits for size ${normalizedNew}.`
+      );
+    } else {
+      toast.success(`Updated size to ${normalizedNew}.`);
+    }
   };
 
   const getCartTotal = () => {
@@ -245,11 +511,13 @@ const ShopContextProvider = (props) => {
   }, [theme]);
 
   const value = {
-  products,
-  productsLoading,
-  productsError,
+    products,
+    productsLoading,
+    productsError,
   refreshProducts,
   isSoldOut,
+  getSizeQuantity,
+  getAvailableSizes,
     currency,
     delivery_fee,
     theme,
@@ -262,6 +530,7 @@ const ShopContextProvider = (props) => {
     addToCart,
     getCartCount,
     updateQuantity,
+    changeCartItemSize,
     getCartTotal,
     navigate,
   };

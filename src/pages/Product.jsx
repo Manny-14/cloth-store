@@ -6,7 +6,14 @@ import RelatedProducts from "../components/RelatedProducts";
 import { getProduct } from "../../firebase/products/getProduct";
 const Product = () => {
   const { productId } = useParams();
-  const { products, currency, theme, addToCart } = React.useContext(ShopContext);
+  const {
+    products,
+    currency,
+    theme,
+    addToCart,
+    getSizeQuantity,
+    isSoldOut,
+  } = React.useContext(ShopContext);
   const [productData, setProductData] = React.useState(null);
   const [image, setImage] = React.useState("");
   const [size, setSize] = React.useState("");
@@ -108,6 +115,16 @@ const Product = () => {
     }
     return image || productData.image[0] || assets.hero_img;
   }, [image, productData]);
+
+  const selectedSizeStock = React.useMemo(() => {
+    if (!productData || !size) return 0;
+    return getSizeQuantity(productData, size);
+  }, [getSizeQuantity, productData, size]);
+
+  const productSoldOut = React.useMemo(() => {
+    if (!productData) return true;
+    return isSoldOut(productData);
+  }, [isSoldOut, productData]);
 
   React.useEffect(() => {
     if (!productData) return;
@@ -223,14 +240,32 @@ const Product = () => {
                 </button>
               ))}
             </div>
+            {size && (
+              <p
+                className={`text-sm ${
+                  selectedSizeStock > 0 ? "text-green-600" : "text-red-500"
+                }`}
+              >
+                {selectedSizeStock > 0
+                  ? `${selectedSizeStock} in stock`
+                  : "Selected size is sold out"}
+              </p>
+            )}
           </div>
           <button
             onClick={() => addToCart(productData._id, size)}
+            disabled={productSoldOut}
             className={`${
-              theme === "light" ? "bg-black" : "bg-blue-950"
+              theme === "light"
+                ? productSoldOut
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-black"
+                : productSoldOut
+                ? "bg-slate-600 cursor-not-allowed"
+                : "bg-blue-950"
             } text-white px-8 py-3 text-sm active:bg-gray-700 rounded`}
           >
-            Add To Cart
+            {productSoldOut ? "Sold Out" : "Add To Cart"}
           </button>
           <hr className="mt-8 sm:w-4/5" />
           <div className="text-sm mt-5 flex flex-col gap-1">

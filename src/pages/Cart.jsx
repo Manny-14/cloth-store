@@ -5,7 +5,17 @@ import { assets } from "../assets/assets";
 import CartTotal from "../components/CartTotal";
 
 const Cart = () => {
-  const { cartItems, currency, products, updateQuantity, theme, navigate } =
+  const {
+    cartItems,
+    currency,
+    products,
+    updateQuantity,
+    theme,
+    navigate,
+    getSizeQuantity,
+    getAvailableSizes,
+    changeCartItemSize,
+  } =
     React.useContext(ShopContext);
   const [cartData, setCartData] = React.useState([]);
   const iconColor = theme === "dark" ? "filter invert" : "";
@@ -36,9 +46,19 @@ const Cart = () => {
               (product) => product._id === item._id
             );
 
+            if (!productData) {
+              return null;
+            }
+
+            const sizeStock = getSizeQuantity(productData, item.size);
+            const hitStockLimit = item.quantity >= sizeStock && sizeStock > 0;
+            const sizeOptions = getAvailableSizes(productData, {
+              includeCurrentSize: item.size,
+            });
+
             return (
               <div
-                key={index}
+                key={`${item._id}-${item.size}-${index}`}
                 className="py-4 border-t border-b flex flex-wrap items-center gap-4"
               >
                 <div className="flex items-start gap-6">
@@ -56,28 +76,63 @@ const Cart = () => {
                         {currency}
                         {productData.price}
                       </p>
-                      <p className="px-2 sm:px-3 sm:py-1 border text-sm">
-                        {item.size}
-                      </p>
+                      <div className="px-2 sm:px-3 sm:py-1 border text-sm bg-white rounded">
+                        <label className="sr-only" htmlFor={`size-${item._id}-${item.size}`}>
+                          Change size
+                        </label>
+                        <select
+                          id={`size-${item._id}-${item.size}`}
+                          value={item.size}
+                          onChange={(e) =>
+                            changeCartItemSize(item._id, item.size, e.target.value)
+                          }
+                          className="bg-transparent focus:outline-none"
+                        >
+                          {sizeOptions.length > 0 ? (
+                            sizeOptions.map((option) => (
+                              <option value={option} key={option}>
+                                {option}
+                              </option>
+                            ))
+                          ) : (
+                            <option value={item.size}>{item.size}</option>
+                          )}
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 ml-auto">
-                  <input
-                    type="number"
-                    min={1}
-                    defaultValue={item.quantity}
-                    onChange={(e) =>
-                      e.target.value === "" || e.target.value === "0"
-                        ? null
-                        : updateQuantity(
-                            item._id,
-                            item.size,
-                            Number(e.target.value)
-                          )
-                    }
-                    className="border max-w-10 sm:max-w-12 px-1 sm:px-2 py-1 text-center text-black"
-                  />
+                  <div className="flex flex-col items-center">
+                    <input
+                      type="number"
+                      min={1}
+                      max={sizeStock || undefined}
+                      defaultValue={item.quantity}
+                      onChange={(e) => {
+                        if (e.target.value === "" || e.target.value === "0") {
+                          return;
+                        }
+                        updateQuantity(
+                          item._id,
+                          item.size,
+                          Number(e.target.value)
+                        );
+                      }}
+                      className="border max-w-10 sm:max-w-12 px-1 sm:px-2 py-1 text-center text-black"
+                    />
+                    {sizeStock > 0 && (
+                      <p
+                        className={`text-[10px] mt-1 ${
+                          hitStockLimit ? "text-red-500" : "text-slate-500"
+                        }`}
+                      >
+                        {hitStockLimit
+                          ? `Max ${sizeStock} in stock`
+                          : `In stock: ${sizeStock}`}
+                      </p>
+                    )}
+                  </div>
                   <img
                     src={assets.bin_icon}
                     onClick={() => updateQuantity(item._id, item.size, 0)}
