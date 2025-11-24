@@ -1,7 +1,15 @@
 import React from "react";
+import PropTypes from "prop-types";
 
 // Accepts product, onEdit, onDelete, and optionally theme/currency as props
-const ProductCard = ({ product, onEdit, onDelete, theme = "light", currency = "$" }) => {
+const ProductCard = ({
+  product,
+  onEdit,
+  onDelete,
+  theme = "light",
+  currency = "$",
+  isSoldOut = false,
+}) => {
   return (
     <div
       className={`border rounded-lg shadow-md p-4 flex flex-col gap-2 transition hover:shadow-lg ${
@@ -23,6 +31,11 @@ const ProductCard = ({ product, onEdit, onDelete, theme = "light", currency = "$
           <p className="text-sm text-gray-500 dark:text-gray-300 line-clamp-1">
             {product.category} &bull; {product.type}
           </p>
+          {isSoldOut && (
+            <p className="text-xs uppercase font-semibold text-red-500 mt-1">
+              Sold Out
+            </p>
+          )}
         </div>
       </div>
       <div className="flex flex-col gap-1 mt-2">
@@ -72,6 +85,15 @@ const ProductCard = ({ product, onEdit, onDelete, theme = "light", currency = "$
       </div>
     </div>
   );
+};
+
+ProductCard.propTypes = {
+  product: PropTypes.object.isRequired,
+  onEdit: PropTypes.func,
+  onDelete: PropTypes.func,
+  theme: PropTypes.string,
+  currency: PropTypes.string,
+  isSoldOut: PropTypes.bool,
 };
 
 export default ProductCard;

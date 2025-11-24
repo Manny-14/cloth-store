@@ -8,7 +8,7 @@ import { uploadProduct } from "../../firebase/products/uploadProduct";
 import { productCategory, productType } from "../helper/dropdowns";
 
 const UploadProduct = ({ closeUploadProduct }) => {
-  const { theme } = React.useContext(ShopContext);
+  const { theme, refreshProducts } = React.useContext(ShopContext);
   const [productData, setProductData] = useState({
     productName: "",
     costPrice: "",
@@ -70,10 +70,24 @@ const UploadProduct = ({ closeUploadProduct }) => {
     }
   };
 
+  const toNumber = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
   const handleOnSubmit = async (e) => {
     e.preventDefault();
 
-    const payload = { ...productData, images: [...uploadedImages] };
+    const payload = {
+      ...productData,
+      costPrice: toNumber(productData.costPrice),
+      sellingPrice: toNumber(productData.sellingPrice),
+      smallQuantity: toNumber(productData.smallQuantity),
+      mediumQuantity: toNumber(productData.mediumQuantity),
+      largeQuantity: toNumber(productData.largeQuantity),
+      xlQuantity: toNumber(productData.xlQuantity),
+      images: [...uploadedImages],
+    };
     console.log("payload", payload);
 
     try {
@@ -94,6 +108,7 @@ const UploadProduct = ({ closeUploadProduct }) => {
         images: [],
       });
       setUploadedImages([]);
+      refreshProducts();
       // close the modal:
       closeUploadProduct();
     } catch (error) {

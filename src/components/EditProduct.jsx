@@ -8,7 +8,7 @@ import { editProduct } from "../../firebase/products/editProduct";
 import { productCategory, productType } from "../helper/dropdowns";
 
 const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
-  const { theme } = React.useContext(ShopContext);
+  const { theme, refreshProducts } = React.useContext(ShopContext);
   const [productData, setProductData] = useState({
     productName: product.productName || "",
     costPrice: product.costPrice || "",
@@ -24,6 +24,12 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
   });
 
   const [uploadedImages, setUploadedImages] = useState(product.images ? [...product.images] : []);
+
+  const overlayBg =
+    theme === "light" ? "bg-slate-200 bg-opacity-50" : "bg-slate-800 bg-opacity-70";
+  const modalBg = theme === "light" ? "bg-white" : "bg-black";
+  const inputBg = theme === "light" ? "bg-slate-50" : "bg-slate-900";
+  const dropzoneBg = theme === "light" ? "bg-slate-100" : "bg-slate-800";
 
   const handleOnChange = (e) => {
     setProductData({ ...productData, [e.target.name]: e.target.value });
@@ -63,13 +69,28 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
     }
   };
 
+  const toNumber = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
   const handleOnSubmit = async (e) => {
     e.preventDefault();
-    const payload = { ...productData, images: [...uploadedImages] };
+    const payload = {
+      ...productData,
+      costPrice: toNumber(productData.costPrice),
+      sellingPrice: toNumber(productData.sellingPrice),
+      smallQuantity: toNumber(productData.smallQuantity),
+      mediumQuantity: toNumber(productData.mediumQuantity),
+      largeQuantity: toNumber(productData.largeQuantity),
+      xlQuantity: toNumber(productData.xlQuantity),
+      images: [...uploadedImages],
+    };
     try {
       await editProduct(product.id || product._id, payload);
       toast.success("Product Updated Successfully");
       if (onProductUpdated) onProductUpdated();
+      refreshProducts();
       closeEditProduct();
     } catch (error) {
       toast.error("Failed to update Product");
@@ -78,16 +99,10 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
 
   return (
     <div
-      className={`fixed w-full h-full top-0 left-0 right-0 bottom-0 flex justify-center items-center z-50 ${
-        theme === "light"
-          ? "bg-slate-200 bg-opacity-50"
-          : "bg-slate-800 bg-opacity-70"
-      }`}
+      className={`fixed w-full h-full top-0 left-0 right-0 bottom-0 flex justify-center items-center z-50 ${overlayBg}`}
     >
       <div
-        className={`p-5 w-full h-full max-w-2xl max-h-[85%] rounded shadow-sm overflow-y-auto ${
-          theme === "light" ? "bg-white" : "bg-black"
-        }`}
+        className={`p-5 w-full h-full max-w-2xl max-h-[85%] rounded shadow-sm overflow-y-auto ${modalBg}`}
       >
         <div className="pb-5 flex justify-between items-center">
           <h2 className="font-bold text-2xl">Edit Product</h2>
@@ -104,9 +119,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
             placeholder="enter product name"
             name="productName"
             value={productData.productName}
-            className={`$ {
-              theme === "light" ? "bg-slate-50" : "bg-slate-900"
-            } border-dashed border-2 rounded p-2`}
+            className={`${inputBg} border-dashed border-2 rounded p-2`}
             required
             onChange={handleOnChange}
           />
@@ -121,9 +134,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
               min="0"
               name="costPrice"
               value={productData.costPrice}
-              className={`$ {
-                theme === "light" ? "bg-slate-50" : "bg-slate-900"
-              } border-dashed border-2 rounded p-2 col-start-1 row-start-2 no-arrows`}
+              className={`${inputBg} border-dashed border-2 rounded p-2 col-start-1 row-start-2 no-arrows`}
               onChange={handleOnChange}
             />
             <label htmlFor="sellingPrice" className="col-start-2 row-start-1">
@@ -136,9 +147,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
               min="0"
               name="sellingPrice"
               value={productData.sellingPrice}
-              className={`$ {
-                theme === "light" ? "bg-slate-50" : "bg-slate-900"
-              } border-dashed border-2 rounded p-2 col-start-2 row-start-2 no-arrows`}
+              className={`${inputBg} border-dashed border-2 rounded p-2 col-start-2 row-start-2 no-arrows`}
               onChange={handleOnChange}
             />
           </div>
@@ -147,9 +156,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
             <div className="flex gap-1 items-center flex-1 min-w-0">
               <label htmlFor="smallQuantity">S</label>
               <input
-                className={`$ {
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
+                className={`${inputBg} border-dashed border-2 rounded w-full min-w-0 p-2`}
                 type="number"
                 id="smallQuantity"
                 placeholder="0"
@@ -162,9 +169,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
             <div className="flex gap-1 items-center flex-1 min-w-0">
               <label htmlFor="mediumQuantity">M</label>
               <input
-                className={`$ {
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
+                className={`${inputBg} border-dashed border-2 rounded w-full min-w-0 p-2`}
                 type="number"
                 id="mediumQuantity"
                 placeholder="0"
@@ -177,9 +182,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
             <div className="flex gap-1 items-center flex-1 min-w-0">
               <label htmlFor="largeQuantity">L</label>
               <input
-                className={`$ {
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
+                className={`${inputBg} border-dashed border-2 rounded w-full min-w-0 p-2`}
                 type="number"
                 id="largeQuantity"
                 placeholder="0"
@@ -192,9 +195,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
             <div className="flex gap-1 items-center flex-1 min-w-0">
               <label htmlFor="xlQuantity">XL</label>
               <input
-                className={`$ {
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
+                className={`${inputBg} border-dashed border-2 rounded w-full min-w-0 p-2`}
                 type="number"
                 id="xlQuantity"
                 placeholder="0"
@@ -213,9 +214,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
                 name="category"
                 value={productData.category}
                 onChange={handleOnChange}
-                className={`$ {
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded p-2`}
+                className={`${inputBg} border-dashed border-2 rounded p-2`}
                 required
               >
                 <option value="" disabled>
@@ -235,9 +234,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
                 name="type"
                 value={productData.type}
                 onChange={handleOnChange}
-                className={`$ {
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded p-2`}
+                className={`${inputBg} border-dashed border-2 rounded p-2`}
                 required
               >
                 <option value="" disabled>
@@ -253,14 +250,10 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
           </div>
           <label>Product Images</label>
           <div
-            className={`$ {
-              theme === "light" ? "bg-slate-50" : "bg-slate-900"
-            } border-2 border-dashed p-4 flex justify-normal gap-5 items-center`}
+            className={`${inputBg} border-2 border-dashed p-4 flex justify-normal gap-5 items-center`}
           >
             <div
-              className={`$ {
-                theme === "light" ? "bg-slate-100" : "bg-slate-800"
-              } px-3 py-2 rounded-md border-2 flex-col items-center justify-center`}
+              className={`${dropzoneBg} px-3 py-2 rounded-md border-2 flex-col items-center justify-center`}
             >
               <label htmlFor="productImage" className="cursor-pointer">
                 <input
@@ -326,9 +319,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
             placeholder="enter product description"
             name="description"
             value={productData.description}
-            className={`$ {
-              theme === "light" ? "bg-slate-50" : "bg-slate-900"
-            } border-dashed border-2 rounded p-2 resize-none h-32`}
+            className={`${inputBg} border-dashed border-2 rounded p-2 resize-none h-32`}
             required
             onChange={handleOnChange}
           />
