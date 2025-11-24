@@ -180,15 +180,24 @@ const Collection = () => {
 
         {/* Products Mapping */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6">
-          {filterProducts.map((item, index) => (
-            <ProductItem
-              key={item.id || index}
-              id={item.id}
-              image={item.images}
-              name={item.productName}
-              price={item.sellingPrice}
-            />
-          ))}
+          {filterProducts.map((item, index) => {
+            const rawImage = item.images ?? item.image ?? [];
+            const imageArray = Array.isArray(rawImage)
+              ? rawImage
+              : rawImage
+              ? [rawImage]
+              : [];
+
+            return (
+              <ProductItem
+                key={item.id || item._id || index}
+                id={item.id || item._id}
+                image={imageArray}
+                name={item.productName || item.name || "Untitled Product"}
+                price={Number(item.sellingPrice || item.price || 0)}
+              />
+            );
+          })}
         </div>
       </div>
     </div>

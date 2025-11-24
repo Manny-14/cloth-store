@@ -2,15 +2,16 @@ import React from "react";
 import { ShopContext } from "../context/ShopContext";
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
+import { assets } from "../assets/assets";
+
 const ProductItem = ({ id, image, name, price }) => {
   const { currency, theme } = React.useContext(ShopContext);
-
-  ProductItem.propTypes = {
-    id: PropTypes.node.isRequired,
-    image: PropTypes.node.isRequired,
-    name: PropTypes.node.isRequired,
-    price: PropTypes.node.isRequired,
-  };
+  const imageArray = Array.isArray(image)
+    ? image
+    : image
+    ? [image]
+    : [];
+  const thumbnail = imageArray[0] || assets.hero_img;
   return (
     <Link
       to={`/product/${id}`}
@@ -18,9 +19,9 @@ const ProductItem = ({ id, image, name, price }) => {
         theme === "light" ? "text-gray-700" : "text-white"
       } cursor-pointer`}
     >
-            <div className="overflow-hidden aspect-[8/9]">
+      <div className="overflow-hidden aspect-[8/9]">
         <img
-          src={image[0]}
+          src={thumbnail}
           className="w-full h-full object-cover hover:scale-105 transition ease-in-out"
           alt="Product Image"
         />
@@ -32,6 +33,16 @@ const ProductItem = ({ id, image, name, price }) => {
       </p>
     </Link>
   );
+};
+
+ProductItem.propTypes = {
+  id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  image: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.string),
+    PropTypes.string,
+  ]).isRequired,
+  name: PropTypes.string.isRequired,
+  price: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
 };
 
 export default ProductItem;
