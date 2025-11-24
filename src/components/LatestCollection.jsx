@@ -4,11 +4,15 @@ import Title from "./Title";
 import ProductItem from "./ProductItem";
 
 const LatestCollection = () => {
-  const { products, theme } = React.useContext(ShopContext);
+  const { products, productsLoading, productsError, theme, isSoldOut } =
+    React.useContext(ShopContext);
+
   const latestProducts = React.useMemo(() => {
-    return products.slice(0, 10);
-  }, [products]);
-  const descriptionColor = theme === "dark" ? "text-gray-300" : "text-gray-600";
+    return products.filter((item) => !isSoldOut(item)).slice(0, 10);
+  }, [products, isSoldOut]);
+
+  const descriptionColor =
+    theme === "dark" ? "text-gray-300" : "text-gray-600";
 
   return (
     <div className="my-10">
@@ -20,19 +24,23 @@ const LatestCollection = () => {
           Take a look at our latest products.
         </p>
       </div>
-
-      {/* Rendering Products */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 gap-y-6">
-        {latestProducts.map((item, index) => (
-          <ProductItem
-            key={index}
-            id={item._id}
-            image={item.image}
-            name={item.name}
-            price={item.price}
-          />
-        ))}
-      </div>
+      {productsLoading ? (
+        <div className="text-center text-sm text-gray-500">Loading products...</div>
+      ) : productsError ? (
+        <div className="text-center text-red-500 text-sm">{productsError}</div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 gap-y-6">
+          {latestProducts.map((item) => (
+            <ProductItem
+              key={item._id || item.id}
+              id={item._id || item.id}
+              image={item.images || item.image}
+              name={item.productName || item.name}
+              price={item.sellingPrice || item.price}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

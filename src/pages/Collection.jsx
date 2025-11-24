@@ -1,12 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { assets } from "../assets/assets";
 import Title from "../components/Title";
 import ProductItem from "../components/ProductItem";
-import { getAllProducts } from "../../firebase/products/getAllProducts";
 import { ShopContext } from "../context/ShopContext";
 
 const Collection = () => {
-  const [products, setProducts] = useState([]);
+  const {
+    products,
+    productsLoading,
+    productsError,
+    theme,
+    isSoldOut,
+  } = React.useContext(ShopContext);
+
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
@@ -14,19 +20,6 @@ const Collection = () => {
   const [category, setCategory] = useState([]);
   const [type, setType] = useState([]);
   const [sortType, setSortType] = useState("relevant");
-  useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const data = await getAllProducts();
-        setProducts(data);
-      } catch (err) {
-        setProducts([]);
-      }
-    }
-    fetchProducts();
-  }, []);
-
-  // TODO: Fix image rendering for different image sizes
   
   const toggleCategory = (e) => {
     const value = e.target.value;
@@ -46,10 +39,13 @@ const Collection = () => {
     );
   };
 
-  const { theme } = React.useContext(ShopContext);
+  const availableProducts = useMemo(
+    () => products.filter((item) => !isSoldOut(item)),
+    [products, isSoldOut]
+  );
 
   useEffect(() => {
-    let filtered = [...products];
+    let filtered = [...availableProducts];
     if (showSearch && search) {
       filtered = filtered.filter((item) =>
         (item.productName || "").toLowerCase().includes(search.toLowerCase())
@@ -68,7 +64,7 @@ const Collection = () => {
       filtered = filtered.sort((a, b) => Number(b.sellingPrice) - Number(a.sellingPrice));
     }
     setFilterProducts(filtered);
-  }, [products, category, type, search, showSearch, sortType]);
+  }, [availableProducts, category, type, search, showSearch, sortType]);
 
   return (
     <div className="flex flex-col sm:flex-row gap-1 sm:gap-10 pt-10 border-t">
@@ -180,24 +176,38 @@ const Collection = () => {
 
         {/* Products Mapping */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6">
-          {filterProducts.map((item, index) => {
-            const rawImage = item.images ?? item.image ?? [];
-            const imageArray = Array.isArray(rawImage)
-              ? rawImage
-              : rawImage
-              ? [rawImage]
-              : [];
+          {productsLoading ? (
+            <p className="col-span-full text-center text-sm text-gray-500">
+              Loading products...
+            </p>
+          ) : productsError ? (
+            <p className="col-span-full text-center text-sm text-red-500">
+              {productsError}
+            </p>
+          ) : filterProducts.length > 0 ? (
+            filterProducts.map((item, index) => {
+              const rawImage = item.images ?? item.image ?? [];
+              const imageArray = Array.isArray(rawImage)
+                ? rawImage
+                : rawImage
+                ? [rawImage]
+                : [];
 
-            return (
-              <ProductItem
-                key={item.id || item._id || index}
-                id={item.id || item._id}
-                image={imageArray}
-                name={item.productName || item.name || "Untitled Product"}
-                price={Number(item.sellingPrice || item.price || 0)}
-              />
-            );
-          })}
+              return (
+                <ProductItem
+                  key={item.id || item._id || index}
+                  id={item.id || item._id}
+                  image={imageArray}
+                  name={item.productName || item.name || "Untitled Product"}
+                  price={Number(item.sellingPrice || item.price || 0)}
+                />
+              );
+            })
+          ) : (
+            <p className="col-span-full text-center text-sm text-gray-500">
+              No products match your filters.
+            </p>
+          )}
         </div>
       </div>
     </div>
