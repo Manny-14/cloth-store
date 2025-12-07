@@ -4,8 +4,11 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { getAllProducts } from "../../firebase/products/getAllProducts";
 import { products as seedProducts } from "../assets/assets";
-
-const DEFAULT_SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL"];
+import {
+  DEFAULT_SIZE_ORDER,
+  normalizeSizeLabel as normalizeSizeLabelBase,
+  resolveSizeFieldKey,
+} from "../helper/inventory";
 
 export const ShopContext = React.createContext();
 
@@ -17,25 +20,6 @@ const ShopContextProvider = (props) => {
 
   const currency = "$";
   const delivery_fee = 10;
-  const sizeFieldMap = React.useMemo(
-    () => ({
-      XS: "extraSmallQuantity",
-      S: "smallQuantity",
-      SM: "smallQuantity",
-      SMALL: "smallQuantity",
-      M: "mediumQuantity",
-      MEDIUM: "mediumQuantity",
-      L: "largeQuantity",
-      LARGE: "largeQuantity",
-      XL: "xlQuantity",
-      "X-L": "xlQuantity",
-      XXL: "xxlQuantity",
-      "2XL": "xxlQuantity",
-      "XX-LARGE": "xxlQuantity",
-    }),
-    []
-  );
-  const canonicalSizeOrder = React.useMemo(() => DEFAULT_SIZE_ORDER, []);
   const [products, setProducts] = React.useState(() =>
     seedProducts.map((product) => ({
       ...product,
@@ -54,6 +38,15 @@ const ShopContextProvider = (props) => {
   const [cartItems, setCartItems] = React.useState(
     JSON.parse(localStorage.getItem("cartItems")) || {}
   );
+  const canonicalSizeOrder = React.useMemo(() => DEFAULT_SIZE_ORDER, []);
+  const normalizeSizeLabel = React.useCallback(
+    (size) => normalizeSizeLabelBase(size),
+    []
+  );
+  const resolveSizeField = React.useCallback(
+    (size) => resolveSizeFieldKey(size),
+    []
+  );
 
   React.useEffect(() => {
     if (cartItems !== JSON.parse(localStorage.getItem("cartItems"))) {
@@ -62,19 +55,6 @@ const ShopContextProvider = (props) => {
   }, [cartItems]);
 
   const navigate = useNavigate();
-
-  const normalizeSizeLabel = React.useCallback((size) => {
-    if (!size) return "";
-    return String(size).trim().toUpperCase();
-  }, []);
-
-  const resolveSizeField = React.useCallback(
-    (size) => {
-      const normalized = normalizeSizeLabel(size);
-      return sizeFieldMap[normalized] || null;
-    },
-    [normalizeSizeLabel, sizeFieldMap]
-  );
 
   const sanitizeCartData = React.useCallback((cartData) => {
     const sanitized = {};
@@ -107,6 +87,11 @@ const ShopContextProvider = (props) => {
     [sanitizeCartData]
   );
 
+  const clearCart = React.useCallback(() => {
+    setCartItems({});
+    localStorage.setItem("cartItems", JSON.stringify({}));
+  }, []);
+
   const findProductById = React.useCallback(
     (itemId) =>
       products.find((product) => product._id === itemId || product.id === itemId) || null,
@@ -117,7 +102,7 @@ const ShopContextProvider = (props) => {
     (product, size) => {
       if (!product) return 0;
       const normalizedSize = normalizeSizeLabel(size);
-      const sizeField = resolveSizeField(normalizedSize);
+      const sizeField = resolveSizeField(size);
 
       if (sizeField) {
         const value = product[sizeField];
@@ -514,10 +499,10 @@ const ShopContextProvider = (props) => {
     products,
     productsLoading,
     productsError,
-  refreshProducts,
-  isSoldOut,
-  getSizeQuantity,
-  getAvailableSizes,
+    refreshProducts,
+    isSoldOut,
+    getSizeQuantity,
+    getAvailableSizes,
     currency,
     delivery_fee,
     theme,
@@ -531,6 +516,7 @@ const ShopContextProvider = (props) => {
     getCartCount,
     updateQuantity,
     changeCartItemSize,
+    clearCart,
     getCartTotal,
     navigate,
   };
