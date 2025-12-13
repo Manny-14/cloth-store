@@ -72,6 +72,15 @@ const AdminPanel = () => {
               <Link to={"/admin-panel/all-orders"} className='scale-110 border-b-2 border-b-gray-700'>All Orders</Link>
             )
           }
+          <RxDividerVertical />
+          {
+            activePage !== 'system-health' ? (
+              <Link to={"/admin-panel/system-health"}
+                onClick={() => setActivePage("system-health")}>System Health</Link>
+            ) : (
+              <Link to={"/admin-panel/system-health"} className='scale-110 border-b-2 border-b-gray-700'>System Health</Link>
+            )
+          }
         </div>
 
         {/** Exit Admin panel + Theme toggle */}

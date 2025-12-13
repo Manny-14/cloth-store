@@ -20,6 +20,7 @@ import AdminPanel from "./pages/AdminPanel";
 import AllUsers from "./pages/AllUsers";
 import AllProducts from "./pages/AllProducts";
 import AllOrders from "./pages/AllOrders";
+import SystemHealth from "./pages/SystemHealth";
 import { ShopContext } from "./context/ShopContext";
 
 
@@ -48,6 +49,7 @@ const App = () => {
           <Route path="all-users" element={<AllUsers />} />
           <Route path="all-products" element={<AllProducts />} />
           <Route path="all-orders" element={<AllOrders />} />
+          <Route path="system-health" element={<SystemHealth />} />
         </Route>
       </Routes>
       <Footer />
