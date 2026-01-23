@@ -3,7 +3,6 @@ import PropTypes from "prop-types";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { getAllProducts } from "../../firebase/products/getAllProducts";
-import { products as seedProducts } from "../assets/assets";
 import {
   DEFAULT_SIZE_ORDER,
   normalizeSizeLabel as normalizeSizeLabelBase,
@@ -20,17 +19,7 @@ const ShopContextProvider = (props) => {
 
   const currency = "$";
   const delivery_fee = 10;
-  const [products, setProducts] = React.useState(() =>
-    seedProducts.map((product) => ({
-      ...product,
-      id: product._id,
-      images: product.image,
-      sellingPrice: product.price,
-      productName: product.name,
-      totalQuantity: Number.MAX_SAFE_INTEGER,
-      isSoldOut: false,
-    }))
-  );
+  const [products, setProducts] = React.useState([]);
   const [productsLoading, setProductsLoading] = React.useState(false);
   const [productsError, setProductsError] = React.useState("");
   const [search, setSearch] = React.useState("");
