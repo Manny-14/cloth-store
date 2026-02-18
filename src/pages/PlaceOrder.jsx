@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { createOrder } from "../../firebase/orders/createOrder";
 import { editProduct } from "../../firebase/products/editProduct";
 import { resolveSizeFieldKey } from "../helper/inventory";
+import { createStripeCheckoutSession } from "../helper/stripe";
 
 const emptyForm = {
   firstName: "",
@@ -49,7 +50,7 @@ const PlaceOrder = () => {
   } = React.useContext(ShopContext);
   const { currentUser } = useAuth();
 
-  const [method, setMethod] = React.useState("cod");
+  const [method] = React.useState("stripe");
   const [formData, setFormData] = React.useState(() => {
     const { firstName, lastName } = splitDisplayName(currentUser?.displayName);
     return {
@@ -164,55 +165,47 @@ const PlaceOrder = () => {
         return;
       }
 
-      const orderPayload = {
-        userId: currentUser?.uid || null,
-        userEmail: formData.email,
-        customerName: `${formData.firstName} ${formData.lastName}`.trim(),
-        paymentMethod: method,
-        status: method === "cod" ? "pending-shipment" : "pending-payment",
-        subtotal,
-        deliveryFee: subtotal > 0 ? delivery_fee : 0,
-        total: grandTotal,
-        itemsCount: orderItems.reduce((sum, item) => sum + item.quantity, 0),
-        items: orderItems,
-        shippingAddress: {
-          ...formData,
-        },
-        guestCheckout: !currentUser,
-      };
+      try {
+        const lineItemsWithPrice = orderItems
+          .map((item) => {
+            const product = cartLineItems.find((p) => p.productId === item.productId && p.size === item.size)?.productRef;
+            const priceId = product?.stripePriceId;
+            return priceId
+              ? { priceId, quantity: item.quantity, metadata: { size: item.size, firebaseProductId: item.productId } }
+              : null;
+          })
+          .filter(Boolean);
 
-      const orderId = await createOrder(orderPayload);
-
-      const updatePromises = Object.entries(inventoryAdjustments).map(
-        async ([productId, fields]) => {
-          const productReference =
-            cartLineItems.find((item) => item.productId === productId)?.productRef ||
-            products.find((item) => item._id === productId || item.id === productId);
-
-          if (!productReference) return;
-
-          const payload = {};
-          Object.entries(fields).forEach(([field, orderedQty]) => {
-            const currentValue = toNumber(productReference[field]);
-            payload[field] = Math.max(0, currentValue - orderedQty);
-          });
-
-          if (Object.keys(payload).length > 0) {
-            await editProduct(productId, payload);
-          }
+        if (lineItemsWithPrice.length !== orderItems.length) {
+          toast.error("Some products are missing Stripe prices. Please contact support.");
+          setIsSubmitting(false);
+          return;
         }
-      );
 
-      await Promise.all(updatePromises);
-      clearCart();
-      await refreshProducts();
+        const origin = window.location.origin;
+        const basePath = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+        const { url } = await createStripeCheckoutSession({
+          lineItems: lineItemsWithPrice,
+          customerEmail: formData.email,
+          successUrl: `${origin}${basePath}/#/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${origin}${basePath}/#/checkout/cancel`,
+          metadata: {
+            userId: currentUser?.uid || "guest",
+          },
+        });
 
-      toast.success(
-        orderId
-          ? `Order placed successfully (#${orderId.slice(-6)}).`
-          : "Order placed successfully."
-      );
-      navigate("/orders");
+        if (url) {
+          window.location.href = url;
+          return;
+        }
+
+        toast.error("Unable to start Stripe checkout. Please try again.");
+      } catch (err) {
+        console.error("Stripe checkout failed", err);
+        toast.error(err?.message || "Unable to start Stripe checkout. Please try again.");
+      } finally {
+        setIsSubmitting(false);
+      }
     } catch (error) {
       console.error("Failed to place order", error);
       toast.error("Failed to place order. Please try again.");
@@ -326,56 +319,11 @@ const PlaceOrder = () => {
           <div className="mt-8">
             <Title text1={"PAYMENT"} text2={"METHOD"} />
             <div className="flex gap-3 flex-col lg:flex-row">
-              <button
-                type="button"
-                onClick={() => setMethod("stripe")}
-                className={`flex items-center gap-3 border p-2 px-3 cursor-pointer rounded focus:outline-none ${
-                  method === "stripe" ? "ring-2 ring-green-500" : ""
-                }`}
-              >
-                <span
-                  className={`min-w-3.5 h-3.5 border rounded-full ${
-                    method === "stripe" ? "bg-green-500" : ""
-                  }`}
-                ></span>
-                <img
-                  src={assets.stripe_logo}
-                  alt="stripe logo"
-                  className="h-5 mx-4"
-                />
-              </button>
-              <button
-                type="button"
-                onClick={() => setMethod("razorpay")}
-                className={`flex items-center gap-3 border p-2 px-3 cursor-pointer rounded focus:outline-none ${
-                  method === "razorpay" ? "ring-2 ring-green-500" : ""
-                }`}
-              >
-                <span
-                  className={`min-w-3.5 h-3.5 border rounded-full ${
-                    method === "razorpay" ? "bg-green-500" : ""
-                  }`}
-                ></span>
-                <img
-                  src={assets.razorpay_logo}
-                  alt="razorpay logo"
-                  className="h-5 mx-4"
-                />
-              </button>
-              <button
-                type="button"
-                onClick={() => setMethod("cod")}
-                className={`flex items-center gap-3 border p-2 px-3 cursor-pointer rounded focus:outline-none ${
-                  method === "cod" ? "ring-2 ring-green-500" : ""
-                }`}
-              >
-                <span
-                  className={`min-w-3.5 h-3.5 border rounded-full ${
-                    method === "cod" ? "bg-green-500" : ""
-                  }`}
-                ></span>
-                <p className="text-sm font-medium mx-4">CASH ON DELIVERY</p>
-              </button>
+              <div className="flex items-center gap-3 border p-2 px-3 rounded bg-slate-50 dark:bg-slate-900">
+                <span className="min-w-3.5 h-3.5 border rounded-full bg-green-500" />
+                <img src={assets.stripe_logo} alt="stripe logo" className="h-5 mx-4" />
+                <p className="text-sm font-medium">Stripe Checkout</p>
+              </div>
             </div>
             <div className="w-full flex flex-col items-center mt-8 gap-3">
               {!currentUser && (

@@ -1,3 +1,9 @@
 node_modules
 .env
 dist/
+
+# Firebase service-account keys (never commit)
+serviceAccount*.json
+
+# Admin/utility scripts (local-only tooling)
+server/scripts/

@@ -58,7 +58,10 @@ app.post("/create-checkout-session", async (req, res) => {
       return res.status(400).json({ error: "lineItems is required and must be a non-empty array" });
     }
 
-    const sanitizedItems = lineItems.map((item) => {
+    const sanitizedItems = [];
+    const lineItemMeta = {}; // keyed by index → { size, firebaseProductId }
+
+    lineItems.forEach((item, idx) => {
       const price = item?.priceId || item?.price;
       const quantity = Number(item?.quantity || 1);
 
@@ -74,26 +77,92 @@ app.post("/create-checkout-session", async (req, res) => {
         throw new Error("Price ID is not allowed");
       }
 
-      return {
-        price,
-        quantity,
-      };
+      sanitizedItems.push({ price, quantity });
+
+      // Preserve per-line-item metadata (size, productId) in session metadata
+      if (item?.metadata) {
+        lineItemMeta[idx] = {
+          size: item.metadata.size || "",
+          firebaseProductId: item.metadata.firebaseProductId || "",
+        };
+      }
     });
+
+    // Stripe session metadata values must be strings (max 500 chars each).
+    // Store the per-line-item map as a JSON string.
+    const sessionMetadata = {
+      ...metadata,
+      _lineItemMeta: JSON.stringify(lineItemMeta),
+    };
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: sanitizedItems,
       allow_promotion_codes: true,
       customer_email: customerEmail,
-      success_url: successUrl || `${CLIENT_ORIGIN}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl || `${CLIENT_ORIGIN}/checkout/cancel`,
-      metadata,
+      success_url: successUrl || `${CLIENT_ORIGIN}/#/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl || `${CLIENT_ORIGIN}/#/checkout/cancel`,
+      metadata: sessionMetadata,
     });
 
     return res.json({ url: session.url, sessionId: session.id });
   } catch (error) {
     console.error("Error creating checkout session", error);
     return res.status(400).json({ error: error.message || "Unable to create checkout session" });
+  }
+});
+
+app.post("/checkout/session", async (req, res) => {
+  try {
+    const { sessionId } = req.body || {};
+    if (!sessionId) {
+      return res.status(400).json({ error: "sessionId is required" });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["line_items.data.price.product"],
+    });
+
+    // Parse the per-line-item metadata we stored during session creation
+    let lineItemMeta = {};
+    try {
+      lineItemMeta = JSON.parse(session.metadata?._lineItemMeta || "{}");
+    } catch (_) {
+      // ignore parse errors
+    }
+
+    const lineItems = (session.line_items?.data || []).map((item, idx) => {
+      const price = item.price;
+      const product = price?.product;
+      const meta = lineItemMeta[String(idx)] || {};
+      return {
+        priceId: price?.id,
+        quantity: item.quantity,
+        amountSubtotal: item.amount_subtotal,
+        amountTotal: item.amount_total,
+        currency: item.currency,
+        firebaseProductId: meta.firebaseProductId || price?.metadata?.firebaseProductId || product?.metadata?.firebaseProductId,
+        size: meta.size || "",
+        name: product?.name || price?.nickname,
+      };
+    });
+
+    // Strip internal metadata key before returning to client
+    const { _lineItemMeta, ...publicMetadata } = session.metadata || {};
+
+    return res.json({
+      id: session.id,
+      status: session.status,
+      payment_status: session.payment_status,
+      customer_email: session.customer_email,
+      amount_total: session.amount_total,
+      currency: session.currency,
+      metadata: publicMetadata,
+      lineItems,
+    });
+  } catch (error) {
+    console.error("Error retrieving session", error);
+    return res.status(400).json({ error: error.message || "Unable to retrieve session" });
   }
 });
 

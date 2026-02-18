@@ -52,3 +52,17 @@ stripe trigger checkout.session.completed
 - Keep secret keys out of the frontend. Only the publishable key belongs client-side.
 - Restrict `ALLOWED_PRICE_IDS` so only your intended prices can be used.
 - For production, set strong CORS and host on a server you control; avoid exposing this server publicly with test keys.
+
+### Frontend wiring (Stripe)
+
+- Set `VITE_STRIPE_SERVER_URL` in `.env.local` (e.g., `http://localhost:4242`).
+- Checkout flow (in `PlaceOrder.jsx`) uses `stripePriceId` on each product; ensure products have been synced first.
+
+### Local-only utility scripts
+
+The `server/scripts/` directory (git-ignored) contains admin utilities:
+
+- **`syncStripePrices.js`** — backfill Stripe Product/Price IDs into Firestore products.
+- **`deleteAllOrders.js`** — wipe all orders from the Firestore `orders` collection.
+
+Both require `FIREBASE_SERVICE_ACCOUNT_KEY_PATH` and `STRIPE_SECRET_KEY` in `server/.env`. See each script's header for details.

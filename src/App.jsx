@@ -21,6 +21,8 @@ import AllUsers from "./pages/AllUsers";
 import AllProducts from "./pages/AllProducts";
 import AllOrders from "./pages/AllOrders";
 import SystemHealth from "./pages/SystemHealth";
+import CheckoutSuccess from "./pages/CheckoutSuccess";
+import CheckoutCancel from "./pages/CheckoutCancel";
 import { ShopContext } from "./context/ShopContext";
 
 
@@ -44,6 +46,8 @@ const App = () => {
         <Route path="/signup" element={<Signup />} />
         <Route path="/place-order" element={<PlaceOrder />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="/checkout/success" element={<CheckoutSuccess />} />
+        <Route path="/checkout/cancel" element={<CheckoutCancel />} />
         <Route path="profile" element={<Profile />} />
         <Route path="/admin-panel" element={<AdminPanel />} >
           <Route path="all-users" element={<AllUsers />} />
