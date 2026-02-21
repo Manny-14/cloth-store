@@ -43,7 +43,7 @@ stripe trigger checkout.session.completed
 
 ### Client usage
 
-- Call `POST /create-checkout-session` with `{ lineItems: [{ priceId, quantity }], metadata?, customerEmail?, successUrl?, cancelUrl? }`.
+- Call `POST /create-checkout-session` with `{ lineItems: [{ priceId, quantity }], metadata?, customerEmail?, successUrl?, cancelUrl?, shippingFee? }`.
 - Redirect to the returned `url` (or use Stripe.js with `sessionId`).
 - The webhook at `/webhook` verifies signatures and is the place to persist orders / adjust inventory (marked TODO in `server/index.js`).
 
@@ -57,6 +57,30 @@ stripe trigger checkout.session.completed
 
 - Set `VITE_STRIPE_SERVER_URL` in `.env.local` (e.g., `http://localhost:4242`).
 - Checkout flow (in `PlaceOrder.jsx`) uses `stripePriceId` on each product; ensure products have been synced first.
+
+## Delivery pricing defaults (temporary)
+
+Current shipping logic is centralized in `src/helper/shipping.js`.
+
+Rules:
+
+- `standard_shipping`: `$7.99`
+- `doorstep_delivery`: `$12.99`
+- free standard shipping when subtotal `>= $150`
+- doorstep discounted to `$8.99` when subtotal `>= $150`
+- weight surcharge: `+$2` if estimated cart weight > 4kg, `+$4` if > 8kg
+
+Weight assumptions for now (used if product has no explicit `weightKg`):
+
+- towel items: `0.8kg`
+- hoodie/sweater/outerwear: `0.7kg`
+- default clothing: `0.35kg`
+
+Implementation notes:
+
+- Checkout computes the fee in `PlaceOrder.jsx` and sends it to the Stripe server as `shippingFee`.
+- Server appends a shipping line item in Stripe Checkout.
+- Order record stores the fee in `deliveryFee`, and delivery metadata/status is created on payment success.
 
 ### Local-only utility scripts
 

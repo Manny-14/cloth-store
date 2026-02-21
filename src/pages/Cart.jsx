@@ -3,6 +3,7 @@ import { ShopContext } from "../context/ShopContext";
 import Title from "../components/Title";
 import { assets } from "../assets/assets";
 import CartTotal from "../components/CartTotal";
+import { calculateShippingFee, estimateCartWeightKg } from "../helper/shipping";
 
 const Cart = () => {
   const {
@@ -32,6 +33,44 @@ const Cart = () => {
     );
     setCartData(cartData);
   }, [cartItems]);
+
+  const cartLineItems = React.useMemo(() => {
+    return cartData
+      .map((item) => {
+        const productData = products.find((product) => product._id === item._id);
+        if (!productData) return null;
+        return {
+          productName: productData.name,
+          category: productData.category,
+          subCategory: productData.subCategory,
+          type: productData.type,
+          quantity: item.quantity,
+          price: Number(productData.price) || 0,
+        };
+      })
+      .filter(Boolean);
+  }, [cartData, products]);
+
+  const subtotal = React.useMemo(() => {
+    return cartLineItems.reduce(
+      (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 0),
+      0
+    );
+  }, [cartLineItems]);
+
+  const estimatedWeightKg = React.useMemo(() => {
+    return estimateCartWeightKg(cartLineItems);
+  }, [cartLineItems]);
+
+  const shippingFee = React.useMemo(() => {
+    return calculateShippingFee({
+      subtotal,
+      deliveryMethod: "standard_shipping",
+      estimatedWeightKg,
+    });
+  }, [subtotal, estimatedWeightKg]);
+
+  const total = subtotal > 0 ? subtotal + shippingFee : 0;
 
   return (
     <div className="border-t pt-14 min-h-screen">
@@ -146,7 +185,7 @@ const Cart = () => {
 
           <div className="flex justify-center my-20">
             <div className="w-full sm:w-[450px]">
-              <CartTotal />
+              <CartTotal subtotal={subtotal} shippingFee={shippingFee} total={total} />
               <div className="w-full text-center">
                 <button
                   className={`${

@@ -5,10 +5,8 @@ import Title from "../components/Title";
 import { ShopContext } from "../context/ShopContext";
 import { useAuth } from "../context/authContext";
 import { toast } from "react-toastify";
-import { createOrder } from "../../firebase/orders/createOrder";
-import { editProduct } from "../../firebase/products/editProduct";
-import { resolveSizeFieldKey } from "../helper/inventory";
 import { createStripeCheckoutSession } from "../helper/stripe";
+import { calculateShippingFee, estimateCartWeightKg } from "../helper/shipping";
 
 const emptyForm = {
   firstName: "",
@@ -40,17 +38,13 @@ const toNumber = (value) => {
 const PlaceOrder = () => {
   const {
     theme,
-    navigate,
     cartItems,
     products,
     getSizeQuantity,
-    delivery_fee,
-    clearCart,
-    refreshProducts,
   } = React.useContext(ShopContext);
   const { currentUser } = useAuth();
 
-  const [method] = React.useState("stripe");
+  const [deliveryMethod, setDeliveryMethod] = React.useState("standard_shipping");
   const [formData, setFormData] = React.useState(() => {
     const { firstName, lastName } = splitDisplayName(currentUser?.displayName);
     return {
@@ -102,7 +96,19 @@ const PlaceOrder = () => {
     );
   }, [cartLineItems]);
 
-  const grandTotal = subtotal > 0 ? subtotal + delivery_fee : 0;
+  const estimatedWeightKg = React.useMemo(() => {
+    return estimateCartWeightKg(cartLineItems);
+  }, [cartLineItems]);
+
+  const shippingFee = React.useMemo(() => {
+    return calculateShippingFee({
+      subtotal,
+      deliveryMethod,
+      estimatedWeightKg,
+    });
+  }, [subtotal, deliveryMethod, estimatedWeightKg]);
+
+  const grandTotal = subtotal > 0 ? subtotal + shippingFee : 0;
   const isCartEmpty = cartLineItems.length === 0;
 
   const handleInputChange = (event) => {
@@ -121,7 +127,6 @@ const PlaceOrder = () => {
     try {
       const validationErrors = [];
       const orderItems = [];
-      const inventoryAdjustments = {};
 
       cartLineItems.forEach((lineItem) => {
         const product = lineItem.productRef;
@@ -148,15 +153,6 @@ const PlaceOrder = () => {
           pricePerUnit: toNumber(lineItem.price),
           image: lineItem.image,
         });
-
-        const sizeField = resolveSizeFieldKey(lineItem.size);
-        if (sizeField) {
-          inventoryAdjustments[lineItem.productId] =
-            inventoryAdjustments[lineItem.productId] || {};
-          inventoryAdjustments[lineItem.productId][sizeField] =
-            (inventoryAdjustments[lineItem.productId][sizeField] || 0) +
-            lineItem.quantity;
-        }
       });
 
       if (validationErrors.length) {
@@ -184,6 +180,7 @@ const PlaceOrder = () => {
 
         const origin = window.location.origin;
         const basePath = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+        const customerName = `${formData.firstName} ${formData.lastName}`.trim();
         const { url } = await createStripeCheckoutSession({
           lineItems: lineItemsWithPrice,
           customerEmail: formData.email,
@@ -191,7 +188,17 @@ const PlaceOrder = () => {
           cancelUrl: `${origin}${basePath}/#/checkout/cancel`,
           metadata: {
             userId: currentUser?.uid || "guest",
+            customerName,
+            deliveryMethod,
+            deliveryFee: shippingFee.toFixed(2),
+            shippingStreet: formData.street,
+            shippingCity: formData.city,
+            shippingState: formData.state,
+            shippingZip: formData.zip,
+            shippingCountry: formData.country,
+            shippingPhone: formData.phone,
           },
+          shippingFee,
         });
 
         if (url) {
@@ -309,12 +316,45 @@ const PlaceOrder = () => {
             className="w-full border rounded py-1.5 px-3.5 text-black"
             required
           />
+
+          <div className="flex flex-col gap-2 mt-2">
+            <label className="text-sm font-medium">Delivery Option</label>
+            <div className="flex gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setDeliveryMethod("standard_shipping")}
+                className={`px-3 py-2 rounded border text-sm ${
+                  deliveryMethod === "standard_shipping"
+                    ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                    : "border-slate-300 dark:border-slate-700"
+                }`}
+              >
+                Standard Shipping
+              </button>
+              <button
+                type="button"
+                onClick={() => setDeliveryMethod("doorstep_delivery")}
+                className={`px-3 py-2 rounded border text-sm ${
+                  deliveryMethod === "doorstep_delivery"
+                    ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                    : "border-slate-300 dark:border-slate-700"
+                }`}
+              >
+                Doorstep Delivery
+              </button>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {deliveryMethod === "doorstep_delivery"
+                ? "Priority doorstep handoff by local delivery partner."
+                : "Standard shipping to your provided address."}
+            </p>
+          </div>
         </div>
 
         {/* Right Side */}
         <div className="mt-8 w-full sm:w-auto">
           <div className="mt-8 min-w-80">
-            <CartTotal />
+            <CartTotal subtotal={subtotal} shippingFee={shippingFee} total={grandTotal} />
           </div>
           <div className="mt-8">
             <Title text1={"PAYMENT"} text2={"METHOD"} />

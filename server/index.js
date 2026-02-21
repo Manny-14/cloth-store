@@ -10,6 +10,7 @@ const {
   STRIPE_WEBHOOK_SECRET,
   CLIENT_ORIGIN = "http://localhost:5173",
   ALLOWED_PRICE_IDS = "",
+  STRIPE_CURRENCY = "usd",
 } = process.env;
 
 if (!STRIPE_SECRET_KEY) {
@@ -52,7 +53,14 @@ app.get("/health", (_req, res) => {
 
 app.post("/create-checkout-session", async (req, res) => {
   try {
-    const { lineItems = [], successUrl, cancelUrl, customerEmail, metadata = {} } = req.body || {};
+    const {
+      lineItems = [],
+      successUrl,
+      cancelUrl,
+      customerEmail,
+      metadata = {},
+      shippingFee = 0,
+    } = req.body || {};
 
     if (!Array.isArray(lineItems) || lineItems.length === 0) {
       return res.status(400).json({ error: "lineItems is required and must be a non-empty array" });
@@ -88,10 +96,31 @@ app.post("/create-checkout-session", async (req, res) => {
       }
     });
 
+    const normalizedShippingFee = Number(shippingFee);
+    if (Number.isFinite(normalizedShippingFee) && normalizedShippingFee > 0) {
+      sanitizedItems.push({
+        quantity: 1,
+        price_data: {
+          currency: String(STRIPE_CURRENCY || "usd").toLowerCase(),
+          unit_amount: Math.round(normalizedShippingFee * 100),
+          product_data: {
+            name: "Shipping",
+            description: "Delivery charge",
+          },
+        },
+      });
+    }
+
+    const normalizedMetadata = Object.entries(metadata || {}).reduce((acc, [key, value]) => {
+      if (value === undefined || value === null) return acc;
+      acc[key] = String(value);
+      return acc;
+    }, {});
+
     // Stripe session metadata values must be strings (max 500 chars each).
     // Store the per-line-item map as a JSON string.
     const sessionMetadata = {
-      ...metadata,
+      ...normalizedMetadata,
       _lineItemMeta: JSON.stringify(lineItemMeta),
     };
 
@@ -127,7 +156,7 @@ app.post("/checkout/session", async (req, res) => {
     let lineItemMeta = {};
     try {
       lineItemMeta = JSON.parse(session.metadata?._lineItemMeta || "{}");
-    } catch (_) {
+    } catch {
       // ignore parse errors
     }
 
@@ -148,7 +177,8 @@ app.post("/checkout/session", async (req, res) => {
     });
 
     // Strip internal metadata key before returning to client
-    const { _lineItemMeta, ...publicMetadata } = session.metadata || {};
+    const publicMetadata = { ...(session.metadata || {}) };
+    delete publicMetadata._lineItemMeta;
 
     return res.json({
       id: session.id,

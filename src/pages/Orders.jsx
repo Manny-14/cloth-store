@@ -48,8 +48,8 @@ const Orders = () => {
         if (!isMounted) return;
         setOrders(orderList);
       })
-      .catch((err) => {
-        console.error("Failed to load orders", err);
+      .catch((loadError) => {
+        console.error("Failed to load orders", loadError);
         if (isMounted) setError("Unable to load your orders right now.");
       })
       .finally(() => {
@@ -99,7 +99,10 @@ const Orders = () => {
         <div className="flex flex-col gap-4 mt-8">
           {orders.map((order) => {
             const orderTotal = toNumber(order.total ?? order.subtotal ?? 0);
-            const statusLabel = order.status || "processing";
+            const statusLabel = order.delivery?.status || order.status || "pending-shipment";
+            const trackingUrl = order.delivery?.trackingUrl || "";
+            const trackingNumber = order.delivery?.trackingNumber || "";
+            const deliveryMethod = order.deliveryMethod || "standard_shipping";
             return (
               <div
                 key={order.id}
@@ -153,16 +156,33 @@ const Orders = () => {
                   ))}
                 </div>
 
+                <div className={`text-xs ${mutedText} flex flex-col gap-1`}>
+                  <p>
+                    Delivery method: <strong>{deliveryMethod.replace(/_/g, " ")}</strong>
+                  </p>
+                  {trackingNumber && (
+                    <p>
+                      Tracking: <strong>{trackingNumber}</strong>
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex justify-end">
                   <button
                     type="button"
+                    disabled={!trackingUrl}
+                    onClick={() => {
+                      if (trackingUrl) {
+                        window.open(trackingUrl, "_blank", "noopener,noreferrer");
+                      }
+                    }}
                     className={`px-4 py-2 text-xs font-medium rounded-sm ${
                       theme === "dark"
                         ? "bg-gray-800 text-white hover:bg-gray-700"
                         : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                    } transition-colors`}
+                    } transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    Track Order
+                    {trackingUrl ? "Track Order" : "Tracking Pending"}
                   </button>
                 </div>
               </div>
