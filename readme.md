@@ -43,7 +43,7 @@ stripe trigger checkout.session.completed
 
 ### Client usage
 
-- Call `POST /create-checkout-session` with `{ lineItems: [{ priceId, quantity }], metadata?, customerEmail?, successUrl?, cancelUrl?, shippingFee? }`.
+- Call `POST /create-checkout-session` with `{ lineItems: [{ priceId, quantity }], metadata?, customerEmail?, successUrl?, cancelUrl? }`.
 - Redirect to the returned `url` (or use Stripe.js with `sessionId`).
 - The webhook at `/webhook` verifies signatures and is the place to persist orders / adjust inventory (marked TODO in `server/index.js`).
 
@@ -78,8 +78,8 @@ Weight assumptions for now (used if product has no explicit `weightKg`):
 
 Implementation notes:
 
-- Checkout computes the fee in `PlaceOrder.jsx` and sends it to the Stripe server as `shippingFee`.
-- Server appends a shipping line item in Stripe Checkout.
+- Checkout computes a client-side estimate for UX only.
+- Server recomputes shipping from trusted Stripe price/product data and appends a shipping line item in Stripe Checkout.
 - Order record stores the fee in `deliveryFee`, and delivery metadata/status is created on payment success.
 
 ### Local-only utility scripts

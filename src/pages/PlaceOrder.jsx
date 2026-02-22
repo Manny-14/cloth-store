@@ -190,7 +190,6 @@ const PlaceOrder = () => {
             userId: currentUser?.uid || "guest",
             customerName,
             deliveryMethod,
-            deliveryFee: shippingFee.toFixed(2),
             shippingStreet: formData.street,
             shippingCity: formData.city,
             shippingState: formData.state,
@@ -198,7 +197,6 @@ const PlaceOrder = () => {
             shippingCountry: formData.country,
             shippingPhone: formData.phone,
           },
-          shippingFee,
         });
 
         if (url) {

@@ -27,6 +27,53 @@ const allowedPriceIds = ALLOWED_PRICE_IDS
   .map((id) => id.trim())
   .filter(Boolean);
 
+const toNumber = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const detectItemWeightKg = (item = {}) => {
+  const explicitWeight = toNumber(item.weightKg ?? item.weight);
+  if (explicitWeight > 0) return explicitWeight;
+
+  const name = String(item.name || "").toLowerCase();
+  const description = String(item.description || "").toLowerCase();
+  const haystack = `${name} ${description}`;
+
+  if (haystack.includes("towel")) return 0.8;
+  if (haystack.includes("hoodie") || haystack.includes("sweater") || haystack.includes("outerwear")) {
+    return 0.7;
+  }
+
+  return 0.35;
+};
+
+const calculateShippingFee = ({
+  subtotal = 0,
+  deliveryMethod = "standard_shipping",
+  estimatedWeightKg = 0,
+}) => {
+  const FREE_STANDARD_THRESHOLD = 150;
+  const STANDARD_BASE = 7.99;
+  const DOORSTEP_BASE = 12.99;
+
+  const normalizedSubtotal = toNumber(subtotal);
+  const normalizedWeight = toNumber(estimatedWeightKg);
+
+  const weightSurcharge = normalizedWeight > 8 ? 4 : normalizedWeight > 4 ? 2 : 0;
+
+  if (deliveryMethod === "doorstep_delivery") {
+    const discountedDoorstep = normalizedSubtotal >= FREE_STANDARD_THRESHOLD ? 8.99 : DOORSTEP_BASE;
+    return Number((discountedDoorstep + weightSurcharge).toFixed(2));
+  }
+
+  if (normalizedSubtotal >= FREE_STANDARD_THRESHOLD) {
+    return Number((0 + weightSurcharge).toFixed(2));
+  }
+
+  return Number((STANDARD_BASE + weightSurcharge).toFixed(2));
+};
+
 const app = express();
 const port = process.env.PORT || 4242;
 
@@ -59,7 +106,6 @@ app.post("/create-checkout-session", async (req, res) => {
       cancelUrl,
       customerEmail,
       metadata = {},
-      shippingFee = 0,
     } = req.body || {};
 
     if (!Array.isArray(lineItems) || lineItems.length === 0) {
@@ -68,8 +114,11 @@ app.post("/create-checkout-session", async (req, res) => {
 
     const sanitizedItems = [];
     const lineItemMeta = {}; // keyed by index → { size, firebaseProductId }
+    let subtotal = 0;
+    let estimatedWeightKg = 0;
 
-    lineItems.forEach((item, idx) => {
+    for (let idx = 0; idx < lineItems.length; idx += 1) {
+      const item = lineItems[idx];
       const price = item?.priceId || item?.price;
       const quantity = Number(item?.quantity || 1);
 
@@ -85,6 +134,21 @@ app.post("/create-checkout-session", async (req, res) => {
         throw new Error("Price ID is not allowed");
       }
 
+      const stripePrice = await stripe.prices.retrieve(price, {
+        expand: ["product"],
+      });
+
+      const unitAmount = toNumber(stripePrice?.unit_amount) / 100;
+      subtotal += unitAmount * quantity;
+
+      const stripeProduct = stripePrice?.product;
+      const productName = typeof stripeProduct === "object" ? stripeProduct?.name : "";
+      const productDescription = typeof stripeProduct === "object" ? stripeProduct?.description : "";
+      estimatedWeightKg += detectItemWeightKg({
+        name: productName,
+        description: productDescription,
+      }) * quantity;
+
       sanitizedItems.push({ price, quantity });
 
       // Preserve per-line-item metadata (size, productId) in session metadata
@@ -94,21 +158,6 @@ app.post("/create-checkout-session", async (req, res) => {
           firebaseProductId: item.metadata.firebaseProductId || "",
         };
       }
-    });
-
-    const normalizedShippingFee = Number(shippingFee);
-    if (Number.isFinite(normalizedShippingFee) && normalizedShippingFee > 0) {
-      sanitizedItems.push({
-        quantity: 1,
-        price_data: {
-          currency: String(STRIPE_CURRENCY || "usd").toLowerCase(),
-          unit_amount: Math.round(normalizedShippingFee * 100),
-          product_data: {
-            name: "Shipping",
-            description: "Delivery charge",
-          },
-        },
-      });
     }
 
     const normalizedMetadata = Object.entries(metadata || {}).reduce((acc, [key, value]) => {
@@ -117,10 +166,32 @@ app.post("/create-checkout-session", async (req, res) => {
       return acc;
     }, {});
 
+    const deliveryMethod = normalizedMetadata.deliveryMethod || "standard_shipping";
+    const computedShippingFee = calculateShippingFee({
+      subtotal,
+      deliveryMethod,
+      estimatedWeightKg,
+    });
+
+    if (computedShippingFee > 0) {
+      sanitizedItems.push({
+        quantity: 1,
+        price_data: {
+          currency: String(STRIPE_CURRENCY || "usd").toLowerCase(),
+          unit_amount: Math.round(computedShippingFee * 100),
+          product_data: {
+            name: "Shipping",
+            description: "Delivery charge",
+          },
+        },
+      });
+    }
+
     // Stripe session metadata values must be strings (max 500 chars each).
     // Store the per-line-item map as a JSON string.
     const sessionMetadata = {
       ...normalizedMetadata,
+      deliveryFee: computedShippingFee.toFixed(2),
       _lineItemMeta: JSON.stringify(lineItemMeta),
     };
 
