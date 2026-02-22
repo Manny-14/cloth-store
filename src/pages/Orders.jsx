@@ -4,6 +4,7 @@ import Title from "../components/Title";
 import { useAuth } from "../context/authContext";
 import { getOrdersByUser } from "../../firebase/orders/getOrdersByUser";
 import { assets } from "../assets/assets";
+import { DEFAULT_ORDER_STATUS, formatOrderStatusLabel } from "../helper/orderStatus";
 
 const toNumber = (value) => {
   const parsed = Number(value);
@@ -99,7 +100,7 @@ const Orders = () => {
         <div className="flex flex-col gap-4 mt-8">
           {orders.map((order) => {
             const orderTotal = toNumber(order.total ?? order.subtotal ?? 0);
-            const statusLabel = order.delivery?.status || order.status || "pending-shipment";
+            const statusLabel = order.delivery?.status || order.status || DEFAULT_ORDER_STATUS;
             const trackingUrl = order.delivery?.trackingUrl || "";
             const trackingNumber = order.delivery?.trackingNumber || "";
             const deliveryMethod = order.deliveryMethod || "standard_shipping";
@@ -117,7 +118,7 @@ const Orders = () => {
                   </div>
                   <div className="flex items-center gap-3 mt-3 md:mt-0">
                     <span className="text-xs uppercase tracking-wide px-3 py-1 rounded-full bg-green-500/20 text-green-500">
-                      {statusLabel}
+                      {formatOrderStatusLabel(statusLabel)}
                     </span>
                     <p className="text-sm font-medium">
                       Total: {currency}

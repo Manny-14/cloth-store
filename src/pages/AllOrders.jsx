@@ -5,6 +5,11 @@ import { getAllOrders } from "../../firebase/orders/getAllOrders";
 import { updateOrder } from "../../firebase/orders/updateOrder";
 import { assets } from "../assets/assets";
 import { toast } from "react-toastify";
+import {
+  DEFAULT_ORDER_STATUS,
+  ORDER_STATUS_OPTIONS,
+  formatOrderStatusLabel,
+} from "../helper/orderStatus";
 
 const toNumber = (value) => {
   const parsed = Number(value);
@@ -28,17 +33,7 @@ const formatDate = (timestamp) => {
   }
 };
 
-const statusOptions = [
-  "all",
-  "pending-shipment",
-  "packed",
-  "shipped",
-  "out-for-delivery",
-  "delivered",
-  "delivery-exception",
-  "returned",
-  "cancelled",
-];
+const statusOptions = ["all", ...ORDER_STATUS_OPTIONS];
 
 const AllOrders = () => {
   const { theme, currency } = React.useContext(ShopContext);
@@ -73,14 +68,16 @@ const AllOrders = () => {
 
   const filteredOrders = React.useMemo(() => {
     if (statusFilter === "all") return orders;
-    return orders.filter((order) => (order.delivery?.status || order.status || "pending-shipment") === statusFilter);
+    return orders.filter(
+      (order) => (order.delivery?.status || order.status || DEFAULT_ORDER_STATUS) === statusFilter
+    );
   }, [orders, statusFilter]);
 
   const getDraft = (order) => {
     const existing = deliveryEdits[order.id];
     if (existing) return existing;
     return {
-      status: order.delivery?.status || order.status || "pending-shipment",
+      status: order.delivery?.status || order.status || DEFAULT_ORDER_STATUS,
       carrier: order.delivery?.carrier || "",
       trackingNumber: order.delivery?.trackingNumber || "",
       trackingUrl: order.delivery?.trackingUrl || "",
@@ -104,7 +101,7 @@ const AllOrders = () => {
         ...(Array.isArray(order.delivery?.statusHistory) ? order.delivery.statusHistory : []),
       ];
 
-      const previousStatus = order.delivery?.status || order.status || "pending-shipment";
+      const previousStatus = order.delivery?.status || order.status || DEFAULT_ORDER_STATUS;
       if (draft.status !== previousStatus) {
         nextHistory.push({
           status: draft.status,
@@ -172,7 +169,7 @@ const AllOrders = () => {
           >
             {statusOptions.map((option) => (
               <option key={option} value={option}>
-                {option === "all" ? "All" : option.replace(/-/g, " ")}
+                {option === "all" ? "All" : formatOrderStatusLabel(option)}
               </option>
             ))}
           </select>
@@ -206,7 +203,7 @@ const AllOrders = () => {
               </div>
               <div className="flex gap-3 flex-wrap text-sm">
                 <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 uppercase text-xs">
-                  {order.delivery?.status || order.status || "pending-shipment"}
+                  {order.delivery?.status || order.status || DEFAULT_ORDER_STATUS}
                 </span>
                 <span className="font-medium">
                   Total: {currency}
@@ -266,7 +263,7 @@ const AllOrders = () => {
                     .filter((option) => option !== "all")
                     .map((option) => (
                       <option key={option} value={option}>
-                        {option.replace(/-/g, " ")}
+                        {formatOrderStatusLabel(option)}
                       </option>
                     ))}
                 </select>

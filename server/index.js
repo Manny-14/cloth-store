@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import Stripe from "stripe";
 import dotenv from "dotenv";
+import { rateLimit } from "express-rate-limit";
 
 dotenv.config();
 
@@ -77,6 +78,26 @@ const calculateShippingFee = ({
 const app = express();
 const port = process.env.PORT || 4242;
 
+const checkoutLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many checkout requests. Please wait a moment and try again.",
+  },
+});
+
+const sessionLookupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many session lookups. Please try again shortly.",
+  },
+});
+
 // CORS for the frontend
 app.use(
   cors({
@@ -98,7 +119,7 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
 });
 
-app.post("/create-checkout-session", async (req, res) => {
+app.post("/create-checkout-session", checkoutLimiter, async (req, res) => {
   try {
     const {
       lineItems = [],
@@ -212,7 +233,7 @@ app.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-app.post("/checkout/session", async (req, res) => {
+app.post("/checkout/session", sessionLookupLimiter, async (req, res) => {
   try {
     const { sessionId } = req.body || {};
     if (!sessionId) {

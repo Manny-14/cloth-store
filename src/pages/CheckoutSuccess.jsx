@@ -7,6 +7,8 @@ import { toast } from "react-toastify";
 import { createOrder } from "../../firebase/orders/createOrder";
 import { editProduct } from "../../firebase/products/editProduct";
 import { resolveSizeFieldKey } from "../helper/inventory";
+import { getOrderByStripeSession } from "../../firebase/orders/getOrderByStripeSession";
+import { DEFAULT_ORDER_STATUS } from "../helper/orderStatus";
 
 const getSessionId = () => {
   // HashRouter: params may live after the hash, e.g. /#/checkout/success?session_id=...
@@ -55,6 +57,13 @@ const CheckoutSuccess = () => {
           throw new Error("Payment not confirmed yet. Try refreshing in a moment.");
         }
 
+        const existingOrder = await getOrderByStripeSession(session.id);
+        if (existingOrder) {
+          setStatus("done");
+          toast.info(`Order already saved (#${existingOrder.id.slice(-6)})`);
+          return;
+        }
+
         // Build order items from Stripe session line items
         const orderItems = [];
         const inventoryAdjustments = {};
@@ -97,7 +106,7 @@ const CheckoutSuccess = () => {
           customerName: session.metadata?.customerName || "",
           paymentMethod: "stripe",
           paymentStatus: "paid",
-          status: "pending-shipment",
+          status: DEFAULT_ORDER_STATUS,
           subtotal: orderItems.reduce((sum, item) => sum + toNumber(item.pricePerUnit) * item.quantity, 0),
           deliveryFee: toNumber(session.metadata?.deliveryFee),
           total: session.amount_total ? session.amount_total / 100 : undefined,
@@ -113,13 +122,13 @@ const CheckoutSuccess = () => {
           },
           deliveryMethod: session.metadata?.deliveryMethod || "standard_shipping",
           delivery: {
-            status: "pending-shipment",
+            status: DEFAULT_ORDER_STATUS,
             carrier: "",
             trackingNumber: "",
             trackingUrl: "",
             statusHistory: [
               {
-                status: "pending-shipment",
+                status: DEFAULT_ORDER_STATUS,
                 at: new Date().toISOString(),
                 note: "Payment confirmed. Awaiting seller fulfillment.",
               },

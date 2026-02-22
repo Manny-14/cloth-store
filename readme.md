@@ -53,6 +53,29 @@ stripe trigger checkout.session.completed
 - Restrict `ALLOWED_PRICE_IDS` so only your intended prices can be used.
 - For production, set strong CORS and host on a server you control; avoid exposing this server publicly with test keys.
 
+### Switching from Stripe test mode to live mode
+
+This project is already structured so the switch is mostly configuration.
+
+Go-live checklist:
+
+1. Replace test secret with live secret in `server/.env`
+	- `STRIPE_SECRET_KEY=sk_live_...`
+2. Create a live webhook endpoint in Stripe Dashboard and set:
+	- `STRIPE_WEBHOOK_SECRET=whsec_...` (live endpoint secret)
+3. Use live product/price IDs in Firestore products (`stripePriceId`)
+	- test IDs (`price_...`) are not reusable in live mode
+4. Set production frontend origin:
+	- `CLIENT_ORIGIN=https://your-domain.com`
+5. Keep `ALLOWED_PRICE_IDS` populated with your live price IDs
+6. Confirm success/cancel URLs resolve correctly for your deployed app
+7. Run one real low-value payment and confirm:
+	- Checkout completes
+	- `/checkout/session` returns expected metadata
+	- order is created once (idempotency check)
+
+Estimated effort: usually under 1 hour if products/prices are already created in live Stripe.
+
 ### Frontend wiring (Stripe)
 
 - Set `VITE_STRIPE_SERVER_URL` in `.env.local` (e.g., `http://localhost:4242`).
