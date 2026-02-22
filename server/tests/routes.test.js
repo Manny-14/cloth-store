@@ -80,6 +80,20 @@ describe("server routes", () => {
     expect(body.error).toBe("sessionId is required");
   });
 
+  it("POST /create-checkout-session rejects empty line items", async () => {
+    const response = await fetch(`${baseUrl}/create-checkout-session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ lineItems: [] }),
+    });
+
+    const body = await response.json();
+    expect(response.status).toBe(400);
+    expect(body.error).toContain("lineItems is required");
+  });
+
   it("POST /checkout/finalize-session rejects missing sessionId", async () => {
     const response = await fetch(`${baseUrl}/checkout/finalize-session`, {
       method: "POST",
@@ -101,6 +115,22 @@ describe("server routes", () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ sessionId: "cs_test_dummy" }),
+    });
+
+    const body = await response.json();
+    expect(response.status).toBe(503);
+    expect(body.error).toContain("not configured");
+  });
+
+  it("POST /admin/orders/:orderId/delivery returns 503 when admin API is not configured", async () => {
+    const response = await fetch(`${baseUrl}/admin/orders/order_1/delivery`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        status: "packed",
+      }),
     });
 
     const body = await response.json();
