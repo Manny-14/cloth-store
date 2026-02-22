@@ -5,6 +5,7 @@ import Title from "../components/Title";
 import { ShopContext } from "../context/ShopContext";
 import { useAuth } from "../context/authContext";
 import { toast } from "react-toastify";
+import { useLocation } from "react-router-dom";
 import { createStripeCheckoutSession } from "../helper/stripe";
 import { calculateShippingFee, estimateCartWeightKg } from "../helper/shipping";
 
@@ -36,6 +37,7 @@ const toNumber = (value) => {
 };
 
 const PlaceOrder = () => {
+  const location = useLocation();
   const {
     theme,
     cartItems,
@@ -89,16 +91,45 @@ const PlaceOrder = () => {
     });
   }, [cartItems, products]);
 
+  const buyNowLineItem = React.useMemo(() => {
+    const buyNowItem = location.state?.buyNowItem;
+    if (!buyNowItem?.productId || !buyNowItem?.size) return null;
+
+    const product = products.find(
+      (item) => item._id === buyNowItem.productId || item.id === buyNowItem.productId
+    );
+
+    if (!product) return null;
+
+    const quantity = Math.max(1, toNumber(buyNowItem.quantity || 1));
+
+    return {
+      productId: buyNowItem.productId,
+      size: buyNowItem.size,
+      quantity,
+      productRef: product,
+      productName: product?.name || product?.productName || "Product",
+      price: product?.price || product?.sellingPrice || 0,
+      image: product?.image?.[0] || assets.hero_img,
+    };
+  }, [location.state, products]);
+
+  const activeLineItems = React.useMemo(() => {
+    return buyNowLineItem ? [buyNowLineItem] : cartLineItems;
+  }, [buyNowLineItem, cartLineItems]);
+
+  const isBuyNowFlow = Boolean(buyNowLineItem);
+
   const subtotal = React.useMemo(() => {
-    return cartLineItems.reduce(
+    return activeLineItems.reduce(
       (sum, item) => sum + toNumber(item.price) * toNumber(item.quantity),
       0
     );
-  }, [cartLineItems]);
+  }, [activeLineItems]);
 
   const estimatedWeightKg = React.useMemo(() => {
-    return estimateCartWeightKg(cartLineItems);
-  }, [cartLineItems]);
+    return estimateCartWeightKg(activeLineItems);
+  }, [activeLineItems]);
 
   const shippingFee = React.useMemo(() => {
     return calculateShippingFee({
@@ -109,7 +140,7 @@ const PlaceOrder = () => {
   }, [subtotal, deliveryMethod, estimatedWeightKg]);
 
   const grandTotal = subtotal > 0 ? subtotal + shippingFee : 0;
-  const isCartEmpty = cartLineItems.length === 0;
+  const isCartEmpty = activeLineItems.length === 0;
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -128,7 +159,7 @@ const PlaceOrder = () => {
       const validationErrors = [];
       const orderItems = [];
 
-      cartLineItems.forEach((lineItem) => {
+      activeLineItems.forEach((lineItem) => {
         const product = lineItem.productRef;
         if (!product) {
           validationErrors.push(
@@ -164,7 +195,7 @@ const PlaceOrder = () => {
       try {
         const lineItemsWithPrice = orderItems
           .map((item) => {
-            const product = cartLineItems.find((p) => p.productId === item.productId && p.size === item.size)?.productRef;
+            const product = activeLineItems.find((p) => p.productId === item.productId && p.size === item.size)?.productRef;
             const priceId = product?.stripePriceId;
             return priceId
               ? { priceId, quantity: item.quantity, metadata: { size: item.size, firebaseProductId: item.productId } }
@@ -189,6 +220,7 @@ const PlaceOrder = () => {
           metadata: {
             userId: currentUser?.uid || "guest",
             customerName,
+            checkoutMode: isBuyNowFlow ? "buy_now" : "cart",
             deliveryMethod,
             shippingStreet: formData.street,
             shippingCity: formData.city,
@@ -346,6 +378,11 @@ const PlaceOrder = () => {
                 ? "Priority doorstep handoff by local delivery partner."
                 : "Standard shipping to your provided address."}
             </p>
+            {isBuyNowFlow && (
+              <p className="text-xs text-blue-600 dark:text-blue-400">
+                Buy Now mode: only the selected product will be checked out.
+              </p>
+            )}
           </div>
         </div>
 

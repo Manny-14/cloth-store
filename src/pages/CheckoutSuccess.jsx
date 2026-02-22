@@ -150,7 +150,9 @@ const CheckoutSuccess = () => {
         );
 
         await Promise.all(updatePromises);
-        clearCart();
+        if (session.metadata?.checkoutMode !== "buy_now") {
+          clearCart();
+        }
         await refreshProducts();
         setStatus("done");
         toast.success(orderId ? `Order saved (#${orderId.slice(-6)})` : "Order saved");

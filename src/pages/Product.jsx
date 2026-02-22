@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { assets } from "../assets/assets";
 import RelatedProducts from "../components/RelatedProducts";
 import { getProduct } from "../../firebase/products/getProduct";
+import { toast } from "react-toastify";
 const Product = () => {
   const { productId } = useParams();
   const {
@@ -11,6 +12,7 @@ const Product = () => {
     currency,
     theme,
     addToCart,
+    navigate,
     getSizeQuantity,
     isSoldOut,
   } = React.useContext(ShopContext);
@@ -131,6 +133,30 @@ const Product = () => {
     setIsImageLoaded(false);
   }, [activeImage, productData]);
 
+  const handleBuyNow = async () => {
+    if (!productData || productSoldOut) return;
+
+    if (!size) {
+      toast.error("Please select the product size");
+      return;
+    }
+
+    if (selectedSizeStock <= 0) {
+      toast.error("Selected size is sold out");
+      return;
+    }
+
+    navigate("/place-order", {
+      state: {
+        buyNowItem: {
+          productId: productData._id,
+          size,
+          quantity: 1,
+        },
+      },
+    });
+  };
+
   if (loading) {
     return (
       <div className="text-xl flex justify-center items-center h-screen">
@@ -240,21 +266,39 @@ const Product = () => {
               </p>
             )}
           </div>
-          <button
-            onClick={() => addToCart(productData._id, size)}
-            disabled={productSoldOut}
-            className={`${
-              theme === "light"
-                ? productSoldOut
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-black"
-                : productSoldOut
-                ? "bg-slate-600 cursor-not-allowed"
-                : "bg-blue-950"
-            } text-white px-8 py-3 text-sm active:bg-gray-700 rounded`}
-          >
-            {productSoldOut ? "Sold Out" : "Add To Cart"}
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => addToCart(productData._id, size)}
+              disabled={productSoldOut}
+              className={`${
+                theme === "light"
+                  ? productSoldOut
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-black"
+                  : productSoldOut
+                  ? "bg-slate-600 cursor-not-allowed"
+                  : "bg-blue-950"
+              } text-white px-8 py-3 text-sm active:bg-gray-700 rounded`}
+            >
+              {productSoldOut ? "Sold Out" : "Add To Cart"}
+            </button>
+
+            <button
+              onClick={handleBuyNow}
+              disabled={productSoldOut}
+              className={`${
+                theme === "light"
+                  ? productSoldOut
+                    ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    : "bg-white border border-black text-black"
+                  : productSoldOut
+                  ? "bg-slate-700 text-slate-300 cursor-not-allowed"
+                  : "bg-slate-100 text-slate-950 border border-slate-300"
+              } px-8 py-3 text-sm rounded`}
+            >
+              Buy Now
+            </button>
+          </div>
           <hr className="mt-8 sm:w-4/5" />
           <div className="text-sm mt-5 flex flex-col gap-1">
             <p>100% Original Product.</p>
