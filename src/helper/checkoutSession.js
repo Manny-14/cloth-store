@@ -18,3 +18,21 @@ export async function fetchCheckoutSession(sessionId) {
 
   return response.json();
 }
+
+export async function finalizeCheckoutSession(sessionId) {
+  const response = await fetch(`${STRIPE_SERVER_URL}/checkout/finalize-session`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ sessionId }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    const message = error?.error || `Failed to finalize session (${response.status})`;
+    throw new Error(message);
+  }
+
+  return response.json();
+}

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchCheckoutSession } from "../checkoutSession";
+import { fetchCheckoutSession, finalizeCheckoutSession } from "../checkoutSession";
 
 describe("checkout session helper", () => {
   afterEach(() => {
@@ -40,6 +40,29 @@ describe("checkout session helper", () => {
 
     await expect(fetchCheckoutSession("cs_test_123")).rejects.toThrow(
       "Failed to load session (500)"
+    );
+  });
+
+  it("finalizes checkout session successfully", async () => {
+    const payload = { orderId: "cs_test_123", alreadyFinalized: false, checkoutMode: "cart" };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => payload,
+    });
+
+    const result = await finalizeCheckoutSession("cs_test_123");
+    expect(result).toEqual(payload);
+  });
+
+  it("throws server-provided message when finalize fails", async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      json: async () => ({ error: "Order finalization is not configured on server." }),
+    });
+
+    await expect(finalizeCheckoutSession("cs_test_123")).rejects.toThrow(
+      "Order finalization is not configured on server."
     );
   });
 });

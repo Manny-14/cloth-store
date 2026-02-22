@@ -1,14 +1,9 @@
 import React from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Title from "../components/Title";
-import { fetchCheckoutSession } from "../helper/checkoutSession";
+import { fetchCheckoutSession, finalizeCheckoutSession } from "../helper/checkoutSession";
 import { ShopContext } from "../context/ShopContext";
 import { toast } from "react-toastify";
-import { createOrder } from "../../firebase/orders/createOrder";
-import { editProduct } from "../../firebase/products/editProduct";
-import { resolveSizeFieldKey } from "../helper/inventory";
-import { getOrderByStripeSession } from "../../firebase/orders/getOrderByStripeSession";
-import { DEFAULT_ORDER_STATUS } from "../helper/orderStatus";
 
 const getSessionId = () => {
   // HashRouter: params may live after the hash, e.g. /#/checkout/success?session_id=...
@@ -27,14 +22,9 @@ const CheckoutSuccess = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id") || getSessionId();
   const navigate = useNavigate();
-  const { products, productsLoading, clearCart, refreshProducts } = React.useContext(ShopContext);
+  const { clearCart, refreshProducts } = React.useContext(ShopContext);
   const [status, setStatus] = React.useState("pending");
   const finalizedRef = React.useRef(false);
-
-  const toNumber = (value) => {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  };
 
   React.useEffect(() => {
     // Guard: no session id
@@ -42,9 +32,6 @@ const CheckoutSuccess = () => {
       setStatus("error");
       return;
     }
-
-    // Guard: wait for products to finish loading
-    if (productsLoading || products.length === 0) return;
 
     // Guard: only finalize once
     if (finalizedRef.current) return;
@@ -57,114 +44,26 @@ const CheckoutSuccess = () => {
           throw new Error("Payment not confirmed yet. Try refreshing in a moment.");
         }
 
-        const existingOrder = await getOrderByStripeSession(session.id);
-        if (existingOrder) {
-          setStatus("done");
-          toast.info(`Order already saved (#${existingOrder.id.slice(-6)})`);
-          return;
-        }
-
-        // Build order items from Stripe session line items
-        const orderItems = [];
-        const inventoryAdjustments = {};
-
-        (session.lineItems || []).forEach((line) => {
-          const productId = line.firebaseProductId;
-          if (!productId) return;
-          const product = products.find((p) => p._id === productId || p.id === productId);
-          const quantity = toNumber(line.quantity);
-          if (!product || quantity <= 0) return;
-
-          const pricePerUnit = line.amountSubtotal
-            ? line.amountSubtotal / 100 / quantity
-            : toNumber(product?.price || product?.sellingPrice || 0);
-
-          orderItems.push({
-            productId,
-            productName: product?.name || product?.productName || line.name || "Product",
-            size: line.size || line.metadata?.size || "",
-            quantity,
-            pricePerUnit,
-            image: product?.images?.[0] || product?.image?.[0] || "",
-          });
-
-          const sizeField = resolveSizeFieldKey(line.size || line.metadata?.size || "");
-          if (sizeField) {
-            inventoryAdjustments[productId] = inventoryAdjustments[productId] || {};
-            inventoryAdjustments[productId][sizeField] =
-              (inventoryAdjustments[productId][sizeField] || 0) + quantity;
-          }
-        });
-
-        if (!orderItems.length) {
-          throw new Error("Could not match Stripe line items to products.");
-        }
-
-        const orderPayload = {
-          userId: session.metadata?.userId || null,
-          userEmail: session.customer_email,
-          customerName: session.metadata?.customerName || "",
-          paymentMethod: "stripe",
-          paymentStatus: "paid",
-          status: DEFAULT_ORDER_STATUS,
-          subtotal: orderItems.reduce((sum, item) => sum + toNumber(item.pricePerUnit) * item.quantity, 0),
-          deliveryFee: toNumber(session.metadata?.deliveryFee),
-          total: session.amount_total ? session.amount_total / 100 : undefined,
-          itemsCount: orderItems.reduce((sum, item) => sum + item.quantity, 0),
-          items: orderItems,
-          shippingAddress: {
-            street: session.metadata?.shippingStreet || "",
-            city: session.metadata?.shippingCity || "",
-            state: session.metadata?.shippingState || "",
-            zip: session.metadata?.shippingZip || "",
-            country: session.metadata?.shippingCountry || "",
-            phone: session.metadata?.shippingPhone || "",
-          },
-          deliveryMethod: session.metadata?.deliveryMethod || "standard_shipping",
-          delivery: {
-            status: DEFAULT_ORDER_STATUS,
-            carrier: "",
-            trackingNumber: "",
-            trackingUrl: "",
-            statusHistory: [
-              {
-                status: DEFAULT_ORDER_STATUS,
-                at: new Date().toISOString(),
-                note: "Payment confirmed. Awaiting seller fulfillment.",
-              },
-            ],
-          },
-          guestCheckout: !session.metadata?.userId,
-          stripeSessionId: session.id,
-        };
-
-        const orderId = await createOrder(orderPayload);
-
-        // Decrement inventory
-        const updatePromises = Object.entries(inventoryAdjustments).map(
-          async ([productId, fields]) => {
-            const productReference = products.find((item) => item._id === productId || item.id === productId);
-            if (!productReference) return;
-
-            const payload = {};
-            Object.entries(fields).forEach(([field, orderedQty]) => {
-              const currentValue = toNumber(productReference[field]);
-              payload[field] = Math.max(0, currentValue - orderedQty);
-            });
-
-            if (Object.keys(payload).length > 0) {
-              await editProduct(productId, payload);
-            }
-          }
-        );
-
-        await Promise.all(updatePromises);
-        if (session.metadata?.checkoutMode !== "buy_now") {
+        const finalizeResult = await finalizeCheckoutSession(session.id);
+        if (finalizeResult.checkoutMode !== "buy_now") {
           clearCart();
         }
         await refreshProducts();
         setStatus("done");
-        toast.success(orderId ? `Order saved (#${orderId.slice(-6)})` : "Order saved");
+        if (finalizeResult.alreadyFinalized) {
+          toast.info(
+            finalizeResult.orderId
+              ? `Order already saved (#${String(finalizeResult.orderId).slice(-6)})`
+              : "Order already saved"
+          );
+          return;
+        }
+
+        toast.success(
+          finalizeResult.orderId
+            ? `Order saved (#${String(finalizeResult.orderId).slice(-6)})`
+            : "Order saved"
+        );
       } catch (err) {
         console.error("Finalize order failed", err);
         finalizedRef.current = false; // allow manual retry
@@ -174,9 +73,9 @@ const CheckoutSuccess = () => {
     };
 
     finalizeOrder();
-    // Only depend on sessionId, productsLoading, and products.length — not the full products array
+    // Only depend on sessionId
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, productsLoading, products.length]);
+  }, [sessionId]);
 
   const isLoading = status === "pending";
 

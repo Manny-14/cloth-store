@@ -34,7 +34,7 @@ beforeAll(async () => {
       ...process.env,
       PORT: String(port),
       CLIENT_ORIGIN: "http://localhost:5173",
-      STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "sk_test_dummy_for_tests",
+      STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || "not-a-real-key",
       ALLOWED_PRICE_IDS: "",
       FIREBASE_SERVICE_ACCOUNT_KEY_PATH: "",
       FIREBASE_SERVICE_ACCOUNT_JSON: "",
@@ -78,5 +78,33 @@ describe("server routes", () => {
     const body = await response.json();
     expect(response.status).toBe(400);
     expect(body.error).toBe("sessionId is required");
+  });
+
+  it("POST /checkout/finalize-session rejects missing sessionId", async () => {
+    const response = await fetch(`${baseUrl}/checkout/finalize-session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+
+    const body = await response.json();
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("sessionId is required");
+  });
+
+  it("POST /checkout/finalize-session returns 503 when server finalization is not configured", async () => {
+    const response = await fetch(`${baseUrl}/checkout/finalize-session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ sessionId: "cs_test_dummy" }),
+    });
+
+    const body = await response.json();
+    expect(response.status).toBe(503);
+    expect(body.error).toContain("not configured");
   });
 });
