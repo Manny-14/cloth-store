@@ -3,6 +3,12 @@ import cors from "cors";
 import Stripe from "stripe";
 import dotenv from "dotenv";
 import { rateLimit } from "express-rate-limit";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 
 dotenv.config();
 
@@ -12,6 +18,8 @@ const {
   CLIENT_ORIGIN = "http://localhost:5173",
   ALLOWED_PRICE_IDS = "",
   STRIPE_CURRENCY = "usd",
+  FIREBASE_SERVICE_ACCOUNT_KEY_PATH = "",
+  FIREBASE_SERVICE_ACCOUNT_JSON = "",
 } = process.env;
 
 if (!STRIPE_SECRET_KEY) {
@@ -77,6 +85,63 @@ const calculateShippingFee = ({
 
 const app = express();
 const port = process.env.PORT || 4242;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const ORDER_STATUS_OPTIONS = new Set([
+  "pending-shipment",
+  "packed",
+  "shipped",
+  "out-for-delivery",
+  "delivered",
+  "delivery-exception",
+  "returned",
+  "cancelled",
+]);
+
+const normalizeServiceAccountPath = (serviceAccountPath) => {
+  if (!serviceAccountPath) return "";
+  return path.isAbsolute(serviceAccountPath)
+    ? serviceAccountPath
+    : path.resolve(__dirname, serviceAccountPath);
+};
+
+const resolveServiceAccountConfig = () => {
+  if (FIREBASE_SERVICE_ACCOUNT_JSON?.trim()) {
+    return JSON.parse(FIREBASE_SERVICE_ACCOUNT_JSON);
+  }
+
+  if (FIREBASE_SERVICE_ACCOUNT_KEY_PATH?.trim()) {
+    const normalizedPath = normalizeServiceAccountPath(FIREBASE_SERVICE_ACCOUNT_KEY_PATH.trim());
+    const raw = fs.readFileSync(normalizedPath, "utf8");
+    return JSON.parse(raw);
+  }
+
+  return null;
+};
+
+let adminAuth = null;
+let adminDb = null;
+
+try {
+  const serviceAccount = resolveServiceAccountConfig();
+  if (serviceAccount) {
+    if (!getApps().length) {
+      initializeApp({
+        credential: cert(serviceAccount),
+      });
+    }
+
+    adminAuth = getAuth();
+    adminDb = getFirestore();
+  } else {
+    console.warn(
+      "Firebase Admin SDK not configured. Set FIREBASE_SERVICE_ACCOUNT_KEY_PATH or FIREBASE_SERVICE_ACCOUNT_JSON to enable admin-protected routes."
+    );
+  }
+} catch (error) {
+  console.error("Failed to initialize Firebase Admin SDK", error);
+}
 
 const checkoutLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -97,6 +162,55 @@ const sessionLookupLimiter = rateLimit({
     error: "Too many session lookups. Please try again shortly.",
   },
 });
+
+const adminUpdateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 180,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many admin update requests. Please try again shortly.",
+  },
+});
+
+const requireAdminAuth = async (req, res, next) => {
+  if (!adminAuth || !adminDb) {
+    return res.status(503).json({
+      error: "Admin API is not configured on server.",
+    });
+  }
+
+  const authHeader = req.headers.authorization || "";
+  if (!authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Missing Authorization bearer token" });
+  }
+
+  const idToken = authHeader.slice("Bearer ".length).trim();
+  if (!idToken) {
+    return res.status(401).json({ error: "Invalid bearer token" });
+  }
+
+  try {
+    const decoded = await adminAuth.verifyIdToken(idToken);
+    const userDoc = await adminDb.collection("users").doc(decoded.uid).get();
+    const role = String(userDoc.data()?.role || "").toUpperCase();
+
+    if (role !== "ADMIN") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    req.adminUser = {
+      uid: decoded.uid,
+      email: decoded.email || "",
+      role,
+    };
+
+    return next();
+  } catch (error) {
+    console.error("Admin auth verification failed", error);
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+};
 
 // CORS for the frontend
 app.use(
@@ -285,6 +399,69 @@ app.post("/checkout/session", sessionLookupLimiter, async (req, res) => {
   } catch (error) {
     console.error("Error retrieving session", error);
     return res.status(400).json({ error: error.message || "Unable to retrieve session" });
+  }
+});
+
+app.post("/admin/orders/:orderId/delivery", adminUpdateLimiter, requireAdminAuth, async (req, res) => {
+  try {
+    const { orderId } = req.params || {};
+    if (!orderId) {
+      return res.status(400).json({ error: "orderId is required" });
+    }
+
+    const {
+      status,
+      carrier = "",
+      trackingNumber = "",
+      trackingUrl = "",
+      note = "Updated by admin",
+    } = req.body || {};
+
+    if (!status || !ORDER_STATUS_OPTIONS.has(status)) {
+      return res.status(400).json({
+        error: "A valid delivery status is required",
+      });
+    }
+
+    const orderRef = adminDb.collection("orders").doc(orderId);
+    const orderDoc = await orderRef.get();
+
+    if (!orderDoc.exists) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    const existingOrder = orderDoc.data() || {};
+    const previousStatus = existingOrder.delivery?.status || existingOrder.status || "pending-shipment";
+    const nextHistory = Array.isArray(existingOrder.delivery?.statusHistory)
+      ? [...existingOrder.delivery.statusHistory]
+      : [];
+
+    if (status !== previousStatus) {
+      nextHistory.push({
+        status,
+        at: new Date().toISOString(),
+        note: String(note || "Updated by admin"),
+        updatedBy: req.adminUser?.uid || "",
+      });
+    }
+
+    await orderRef.update({
+      status,
+      delivery: {
+        ...(existingOrder.delivery || {}),
+        status,
+        carrier: String(carrier || ""),
+        trackingNumber: String(trackingNumber || ""),
+        trackingUrl: String(trackingUrl || ""),
+        statusHistory: nextHistory,
+      },
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error("Failed to update order delivery", error);
+    return res.status(500).json({ error: "Unable to update order delivery" });
   }
 });
 

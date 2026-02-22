@@ -2,14 +2,15 @@ import React from "react";
 import Title from "../components/Title";
 import { ShopContext } from "../context/ShopContext";
 import { getAllOrders } from "../../firebase/orders/getAllOrders";
-import { updateOrder } from "../../firebase/orders/updateOrder";
 import { assets } from "../assets/assets";
 import { toast } from "react-toastify";
+import { useAuth } from "../context/authContext";
 import {
   DEFAULT_ORDER_STATUS,
   ORDER_STATUS_OPTIONS,
   formatOrderStatusLabel,
 } from "../helper/orderStatus";
+import { updateOrderDeliveryByAdmin } from "../helper/adminOrders";
 
 const toNumber = (value) => {
   const parsed = Number(value);
@@ -37,6 +38,7 @@ const statusOptions = ["all", ...ORDER_STATUS_OPTIONS];
 
 const AllOrders = () => {
   const { theme, currency } = React.useContext(ShopContext);
+  const { currentUser } = useAuth();
   const [orders, setOrders] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
@@ -97,29 +99,19 @@ const AllOrders = () => {
   const saveDeliveryUpdate = async (order) => {
     const draft = getDraft(order);
     try {
-      const nextHistory = [
-        ...(Array.isArray(order.delivery?.statusHistory) ? order.delivery.statusHistory : []),
-      ];
-
       const previousStatus = order.delivery?.status || order.status || DEFAULT_ORDER_STATUS;
-      if (draft.status !== previousStatus) {
-        nextHistory.push({
-          status: draft.status,
-          at: new Date().toISOString(),
-          note: "Updated by admin",
-        });
-      }
 
-      await updateOrder(order.id, {
+      await updateOrderDeliveryByAdmin({
+        orderId: order.id,
         status: draft.status,
-        delivery: {
-          ...(order.delivery || {}),
-          status: draft.status,
-          carrier: draft.carrier,
-          trackingNumber: draft.trackingNumber,
-          trackingUrl: draft.trackingUrl,
-          statusHistory: nextHistory,
-        },
+        carrier: draft.carrier,
+        trackingNumber: draft.trackingNumber,
+        trackingUrl: draft.trackingUrl,
+        note:
+          draft.status !== previousStatus
+            ? "Updated by admin"
+            : "Tracking details edited by admin",
+        currentUser,
       });
 
       toast.success("Order delivery updated");

@@ -27,6 +27,8 @@ Fill in:
 - `STRIPE_WEBHOOK_SECRET` (from `stripe listen` or Dashboard)
 - `CLIENT_ORIGIN` (e.g., http://localhost:5173)
 - `ALLOWED_PRICE_IDS` (comma-separated Stripe Price IDs you want to allow)
+- `FIREBASE_SERVICE_ACCOUNT_KEY_PATH` (optional, required for protected admin order updates)
+	- Example: `../service-account.json`
 
 3) Run the server
 
@@ -52,6 +54,10 @@ stripe trigger checkout.session.completed
 - Keep secret keys out of the frontend. Only the publishable key belongs client-side.
 - Restrict `ALLOWED_PRICE_IDS` so only your intended prices can be used.
 - For production, set strong CORS and host on a server you control; avoid exposing this server publicly with test keys.
+- Admin delivery updates are now protected at `POST /admin/orders/:orderId/delivery` and require:
+	- Firebase ID token in `Authorization: Bearer <token>`
+	- user role `ADMIN` in Firestore `users/{uid}`
+	- server-side Firebase Admin SDK configuration
 
 ### Switching from Stripe test mode to live mode
 
