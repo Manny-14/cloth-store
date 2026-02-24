@@ -30,6 +30,11 @@ const Navbar = () => {
     }
   }
 
+  const closeMenuAndNavigate = (path) => {
+    setVisible(false);
+    navigate(path);
+  };
+
   const handleProfileClick = () => {
     if(!userLoggedIn) {
       navigate('/login');
@@ -224,6 +229,57 @@ const Navbar = () => {
           >
             CONTACT
           </NavLink>
+
+          {!userLoggedIn && (
+            <button
+              type="button"
+              onClick={() => closeMenuAndNavigate("/login")}
+              className="py-2 pl-6 border text-center"
+            >
+              LOGIN
+            </button>
+          )}
+
+          {userLoggedIn && (
+            <>
+              <button
+                type="button"
+                onClick={() => closeMenuAndNavigate("/profile")}
+                className="py-2 pl-6 border text-center"
+              >
+                MY ACCOUNT
+              </button>
+
+              <button
+                type="button"
+                onClick={() => closeMenuAndNavigate("/orders")}
+                className="py-2 pl-6 border text-center"
+              >
+                ORDERS
+              </button>
+
+              {String(currentUser?.role || "").toUpperCase() === "ADMIN" && (
+                <button
+                  type="button"
+                  onClick={() => closeMenuAndNavigate("/admin-panel/all-users")}
+                  className="py-2 pl-6 border text-center"
+                >
+                  ADMIN PANEL
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={async () => {
+                  setVisible(false);
+                  await logoutHandler();
+                }}
+                className="py-2 pl-6 border text-center"
+              >
+                LOGOUT
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
