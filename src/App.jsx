@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import Collection from "./pages/Collection";
 import About from "./pages/About";
@@ -24,10 +24,33 @@ import SystemHealth from "./pages/SystemHealth";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import CheckoutCancel from "./pages/CheckoutCancel";
 import { ShopContext } from "./context/ShopContext";
+import { useAuth } from "./context/authContext";
 
 
 const App = () => {
   const { theme } = React.useContext(ShopContext);
+  const { currentUser, userLoggedIn } = useAuth();
+  const isAdmin = userLoggedIn && String(currentUser?.role || "").toUpperCase() === "ADMIN";
+
+  if (isAdmin) {
+    return (
+      <div
+        className={`min-h-screen px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] transition-colors duration-300 bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100`}
+      >
+        <ToastContainer position="top-center" autoClose={2800} theme={theme} />
+        <Routes>
+          <Route path="/admin-panel" element={<AdminPanel />} >
+            <Route path="all-users" element={<AllUsers />} />
+            <Route path="all-products" element={<AllProducts />} />
+            <Route path="all-orders" element={<AllOrders />} />
+            <Route path="system-health" element={<SystemHealth />} />
+          </Route>
+          <Route path="*" element={<Navigate to="/admin-panel/all-users" replace />} />
+        </Routes>
+      </div>
+    );
+  }
+
   return (
     <div
       className={`min-h-screen px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] transition-colors duration-300 bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100`}
@@ -48,7 +71,7 @@ const App = () => {
         <Route path="/orders" element={<Orders />} />
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
         <Route path="/checkout/cancel" element={<CheckoutCancel />} />
-        <Route path="profile" element={<Profile />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="/admin-panel" element={<AdminPanel />} >
           <Route path="all-users" element={<AllUsers />} />
           <Route path="all-products" element={<AllProducts />} />
