@@ -166,7 +166,7 @@ const Collection = () => {
           {/* Product Sort */}
           <select
             onChange={(e) => setSortType(e.target.value)}
-            className="border-2 border-gray-300 text-sm px-2 text-black select-menu"
+            className="border-2 border-gray-300 text-xs sm:text-sm px-2 py-1.5 rounded text-black select-menu"
           >
             <option value="relevant">Sort by: Relevant</option>
             <option value="low-high">Sort by: Low-High</option>

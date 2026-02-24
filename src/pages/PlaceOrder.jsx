@@ -414,7 +414,7 @@ const PlaceOrder = () => {
                   theme === "light"
                     ? "bg-black text-white"
                     : "bg-white text-black"
-                } px-16 py-3 mt-4 text-sm rounded disabled:opacity-60 disabled:cursor-not-allowed`}
+                } w-full sm:w-auto px-16 py-3.5 mt-4 text-sm rounded disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] transition-transform`}
               >
                 {isSubmitting ? "PLACING ORDER..." : "PLACE ORDER"}
               </button>

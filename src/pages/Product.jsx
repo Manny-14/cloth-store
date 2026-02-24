@@ -236,19 +236,19 @@ const Product = () => {
             {currency}
             {productData.price}
           </p>
-          <p className="mt-3 md:w-4/5 text-xl">{productData.description}</p>
-          <div className="flex flex-col gap-4 my-8">
-            <p>Select Size</p>
-            <div className="flex gap-2">
+          <p className="mt-3 md:w-4/5 text-sm sm:text-base leading-relaxed">{productData.description}</p>
+          <div className="flex flex-col gap-4 my-6 sm:my-8">
+            <p className="text-sm font-medium">Select Size</p>
+            <div className="flex flex-wrap gap-2">
               {productData.sizes.map((item, index) => (
                 <button
                   key={index}
                   onClick={() => setSize(item)}
-                  className={`border py-2 px-4  text-black ${
+                  className={`border min-w-[2.75rem] py-2.5 px-4 text-sm ${
                     item === size
-                      ? "bg-blue-950 text-white"
+                      ? "bg-blue-950 text-white border-blue-950"
                       : "bg-gray-100 text-black"
-                  } rounded`}
+                  } rounded active:scale-95 transition-transform`}
                 >
                   {item}
                 </button>
@@ -266,7 +266,7 @@ const Product = () => {
               </p>
             )}
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={() => addToCart(productData._id, size)}
               disabled={productSoldOut}
@@ -278,7 +278,7 @@ const Product = () => {
                   : productSoldOut
                   ? "bg-slate-600 cursor-not-allowed"
                   : "bg-blue-950"
-              } text-white px-8 py-3 text-sm active:bg-gray-700 rounded`}
+              } text-white w-full sm:w-auto px-8 py-3 text-sm active:bg-gray-700 rounded active:scale-[0.98] transition-transform`}
             >
               {productSoldOut ? "Sold Out" : "Add To Cart"}
             </button>
@@ -294,7 +294,7 @@ const Product = () => {
                   : productSoldOut
                   ? "bg-slate-700 text-slate-300 cursor-not-allowed"
                   : "bg-slate-100 text-slate-950 border border-slate-300"
-              } px-8 py-3 text-sm rounded`}
+              } w-full sm:w-auto px-8 py-3 text-sm rounded active:scale-[0.98] transition-transform`}
             >
               Buy Now
             </button>

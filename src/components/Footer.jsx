@@ -18,7 +18,7 @@ const Footer = () => {
       <div className="flex flex-col sm:flex-row items-start justify-between gap-6 mb-8">
         <p className={`text-xl font-medium ${headingColor}`}>CLOTHIFY</p>
       </div>
-      <div className="flex flex-col sm:grid grid-cols-[3fr_1fr_1fr] gap-14 text-sm">
+      <div className="flex flex-col sm:grid grid-cols-[3fr_1fr_1fr] gap-8 sm:gap-14 text-sm">
         <div>
           <p className={`w-full md:w-2/3 ${bodyColor}`}>
             Clothify was founded in 2024 with the mission to revolutionize the

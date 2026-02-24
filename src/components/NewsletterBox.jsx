@@ -30,19 +30,19 @@ const NewsletterBox = () => {
       </p>
       <form
         onSubmit={onSubmitHandler}
-        className="w-full sm:w-1/2 flex items-center gap-3 mx-auto mt-4 mb-5 border pl-3"
+        className="w-full sm:w-1/2 flex flex-col sm:flex-row items-stretch gap-0 mx-auto mt-4 mb-5 border rounded-sm overflow-hidden"
       >
         <input
           type="text"
           placeholder="Enter your email address"
-          className="w-full sm:flex-1 outline-none rounded p-[0.5em] text-black"
+          className="w-full sm:flex-1 outline-none p-3 text-sm text-black"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <button
           type="submit"
-          className={`${theme === "light" ? "bg-gray-800" : "bg-[#414141]"} text-white text-sm px-10 py-4`}
+          className={`${theme === "light" ? "bg-gray-800" : "bg-[#414141]"} text-white text-sm px-8 py-3 sm:py-4 active:scale-[0.98] transition-transform`}
         >
           Subscribe
         </button>

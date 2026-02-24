@@ -47,6 +47,11 @@ const Navbar = () => {
   const textColor = theme === "dark" ? "text-white" : "text-gray-700";
   const iconColor = theme === "dark" ? "filter invert" : "";
 
+  // Close sidebar on route change
+  useEffect(() => {
+    setVisible(false);
+  }, [location.pathname]);
+
   return (
     <div
       className={`flex items-center justify-between py-5 font-medium ${textColor}`}
@@ -180,111 +185,154 @@ const Navbar = () => {
         />
       </div>
 
-      {/* Sidebar menu for small screens */}
+      {/* ─── Mobile sidebar overlay ─── */}
+      {visible && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 sm:hidden"
+          onClick={() => setVisible(false)}
+        />
+      )}
+
+      {/* ─── Mobile sidebar ─── */}
       <div
-        className={`absolute top-0 right-0 bottom-0 overflow-hidden transition-all ${
-          visible ? "w-full" : "w-0"
-        } ${theme === "dark" ? "bg-gray-900" : "bg-white"}`}
+        className={`fixed top-0 right-0 bottom-0 z-50 w-[75%] max-w-[300px] overflow-y-auto transition-transform duration-300 ease-in-out sm:hidden ${
+          visible ? "translate-x-0" : "translate-x-full"
+        } ${theme === "dark" ? "bg-gray-900" : "bg-white"} shadow-2xl`}
       >
-        <div className={`sidebar-menu flex flex-col ${textColor}`}>
-          <div
-            onClick={() => setVisible(false)}
-            className="flex items-center gap-4 p-3 cursor-pointer"
-          >
-            <img
-              src={assets.dropdown_icon}
-              className={`h-4 rotate-180 ${iconColor}`}
-              alt="dropdown icon"
-            />
-            <p>Back</p>
-          </div>
-          <div className="px-6 pb-4">
-            <ThemeToggleButton variant="icon" />
-          </div>
-          <NavLink
-            onClick={() => setVisible(false)}
-            className="py-2 pl-6 border text-center"
-            to="/"
-          >
-            HOME
-          </NavLink>
-          <NavLink
-            onClick={() => setVisible(false)}
-            className="py-2 pl-6 border text-center"
-            to="/collection"
-          >
-            COLLECTION
-          </NavLink>
-          <NavLink
-            onClick={() => setVisible(false)}
-            className="py-2 pl-6 border text-center"
-            to="/about"
-          >
-            ABOUT
-          </NavLink>
-          <NavLink
-            onClick={() => setVisible(false)}
-            className="py-2 pl-6 border text-center"
-            to="/contact"
-          >
-            CONTACT
-          </NavLink>
-
-          {!userLoggedIn && (
+        <div className={`flex flex-col h-full ${textColor}`}>
+          {/* Sidebar header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            {userLoggedIn ? (
+              <div className="flex items-center gap-3">
+                <img
+                  src={assets.profile_icon}
+                  className={`w-6 ${iconColor}`}
+                  alt="profile"
+                />
+                <div className="leading-tight">
+                  <p className="text-sm font-semibold">{currentUser?.displayName}</p>
+                  <p className="text-[0.65rem] opacity-60 truncate max-w-[140px]">{currentUser?.email}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm font-semibold">Menu</p>
+            )}
             <button
-              type="button"
-              onClick={() => closeMenuAndNavigate("/login")}
-              className="py-2 pl-6 border text-center"
+              onClick={() => setVisible(false)}
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Close menu"
             >
-              LOGIN
+              <img
+                src={assets.cross_icon}
+                className={`w-3 ${iconColor}`}
+                alt="close"
+              />
             </button>
-          )}
+          </div>
 
-          {userLoggedIn && (
-            <>
-              <button
-                type="button"
-                onClick={() => closeMenuAndNavigate("/profile")}
-                className="py-2 pl-6 border text-center"
+          {/* Navigation links */}
+          <nav className="flex-1 py-2">
+            <p className="px-4 pt-3 pb-1 text-[0.65rem] uppercase tracking-widest opacity-50 font-semibold">Navigate</p>
+            {[
+              { to: "/", label: "Home" },
+              { to: "/collection", label: "Collection" },
+              { to: "/about", label: "About" },
+              { to: "/contact", label: "Contact" },
+            ].map(({ to, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                onClick={() => setVisible(false)}
+                className={({ isActive }) =>
+                  `block px-4 py-3 text-sm transition-colors ${
+                    isActive
+                      ? `font-semibold ${theme === "dark" ? "bg-gray-800" : "bg-gray-50"}`
+                      : "hover:bg-gray-50 dark:hover:bg-gray-800"
+                  }`
+                }
               >
-                MY ACCOUNT
-              </button>
+                {label}
+              </NavLink>
+            ))}
 
-              <button
-                type="button"
-                onClick={() => closeMenuAndNavigate("/orders")}
-                className="py-2 pl-6 border text-center"
-              >
-                ORDERS
-              </button>
-
-              {String(currentUser?.role || "").toUpperCase() === "ADMIN" && (
+            {userLoggedIn && (
+              <>
+                <p className="px-4 pt-5 pb-1 text-[0.65rem] uppercase tracking-widest opacity-50 font-semibold">Account</p>
                 <button
                   type="button"
-                  onClick={() => closeMenuAndNavigate("/admin-panel/all-users")}
-                  className="py-2 pl-6 border text-center"
+                  onClick={() => closeMenuAndNavigate("/profile")}
+                  className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                 >
-                  ADMIN PANEL
+                  My Account
                 </button>
-              )}
+                <button
+                  type="button"
+                  onClick={() => closeMenuAndNavigate("/orders")}
+                  className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Orders
+                </button>
+                <button
+                  type="button"
+                  onClick={() => closeMenuAndNavigate("/cart")}
+                  className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  Cart
+                  {getCartCount() > 0 && (
+                    <span className={`ml-2 inline-flex items-center justify-center w-5 h-5 text-[0.6rem] rounded-full ${
+                      theme === "dark" ? "bg-white text-black" : "bg-black text-white"
+                    }`}>
+                      {getCartCount()}
+                    </span>
+                  )}
+                </button>
+                {String(currentUser?.role || "").toUpperCase() === "ADMIN" && (
+                  <button
+                    type="button"
+                    onClick={() => closeMenuAndNavigate("/admin-panel/all-users")}
+                    className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    Admin Panel
+                  </button>
+                )}
+              </>
+            )}
+          </nav>
 
+          {/* Sidebar footer */}
+          <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs opacity-60">Theme</span>
+              <ThemeToggleButton variant="icon" />
+            </div>
+            {!userLoggedIn ? (
+              <button
+                type="button"
+                onClick={() => closeMenuAndNavigate("/login")}
+                className={`w-full py-2.5 text-sm font-medium rounded-lg transition-colors ${
+                  theme === "dark"
+                    ? "bg-white text-black hover:bg-gray-200"
+                    : "bg-black text-white hover:bg-gray-800"
+                }`}
+              >
+                Sign In
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={async () => {
                   setVisible(false);
                   await logoutHandler();
                 }}
-                className="py-2 pl-6 border text-center"
+                className="w-full py-2.5 text-sm font-medium rounded-lg text-red-500 border border-red-300 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >
-                LOGOUT
+                Sign Out
               </button>
-            </>
-          )}
-        </div>
+            )}
+          </div>        </div>
       </div>
     </div>
   );
 };
 
 export default Navbar;
-

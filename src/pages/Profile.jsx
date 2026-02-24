@@ -7,10 +7,8 @@ import { updateDisplayName } from '../../firebase/user/updateDisplayName';
 import { toast } from 'react-toastify';
 
 
-// TODO: Make adaptive for lightmode
 const Profile = () => {
     const { currentUser } = useAuth();
-    console.log("currentUser", currentUser);
     const { theme } = React.useContext(ShopContext)
     // update display name opens the input field to update the display name
     const [ openUpdateDisplayName, setOpenUpdateDisplayName ] = useState(false);
@@ -52,13 +50,13 @@ const Profile = () => {
                 <div className="flex flex-col items-center w-[90%] sm:max-w-96 gap-4">
                     <div className="inline-flex items-center gap-2 mb-2 mt-10">
                         <p className="prata-regular text-lg">User Profile</p>
-                        <hr className="border-none h-[1.5px] w-8 bg-gray-800" />
+                        <hr className={`border-none h-[1.5px] w-8 ${theme === 'dark' ? 'bg-white' : 'bg-gray-800'}`} />
                     </div>
-                    <div className='w-full px-3 md:text-lg text-black grid grid-cols-2 md:gap-y-4'>
-                        <p>Display Name:</p>
-                        <p>{currentUser?.displayName}</p>
-                        <p>Email:</p>
-                        <p>{currentUser?.email}</p>
+                    <div className={`w-full px-3 text-sm sm:text-base grid grid-cols-1 sm:grid-cols-2 gap-y-3 sm:gap-y-4 ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
+                        <p className="font-medium">Display Name:</p>
+                        <p className="break-words">{currentUser?.displayName}</p>
+                        <p className="font-medium">Email:</p>
+                        <p className="break-words">{currentUser?.email}</p>
                     </div>
                     {/* <div className="w-full px-3 text-black flex gap-4">
                         <p>Display Name:</p>
@@ -68,11 +66,11 @@ const Profile = () => {
                         <p>Email:</p>
                         <p>{currentUser?.email}</p>
                     </div> */}
-                    <div className='flex gap-6 text-sm'>
+                    <div className='flex flex-col sm:flex-row gap-3 w-full px-3 mt-2 text-sm'>
                     <button
                     className={`${
                         theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
-                    } flex-1 font-light px-3 py-2 mt-4 rounded`}
+                    } flex-1 font-light px-4 py-2.5 rounded active:scale-[0.98] transition-transform`}
                     onClick={() => setOpenUpdateDisplayName(true)}
                     >
                         Update Display Name
@@ -82,7 +80,7 @@ const Profile = () => {
                     <button
                     className={`${
                         theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
-                    } flex-1 font-light px-4 py-2 mt-4 rounded`}
+                    } flex-1 font-light px-4 py-2.5 rounded active:scale-[0.98] transition-transform`}
                     >
                         Change Password
                     </button>
