@@ -29,8 +29,20 @@ import { useAuth } from "./context/authContext";
 
 const App = () => {
   const { theme } = React.useContext(ShopContext);
-  const { currentUser, userLoggedIn } = useAuth();
+  const { currentUser, userLoggedIn, isResolvingRole } = useAuth();
   const isAdmin = userLoggedIn && String(currentUser?.role || "").toUpperCase() === "ADMIN";
+
+  // Show a minimal loading screen while the user role is being fetched
+  // to prevent flashing the wrong route tree (e.g. Home for admins)
+  if (isResolvingRole) {
+    return (
+      <div
+        className={`min-h-screen flex items-center justify-center transition-colors duration-300 bg-white dark:bg-slate-950`}
+      >
+        <div className="animate-pulse text-gray-400 dark:text-gray-500 text-sm">Loading…</div>
+      </div>
+    );
+  }
 
   if (isAdmin) {
     return (
@@ -72,12 +84,7 @@ const App = () => {
         <Route path="/checkout/success" element={<CheckoutSuccess />} />
         <Route path="/checkout/cancel" element={<CheckoutCancel />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/admin-panel" element={<AdminPanel />} >
-          <Route path="all-users" element={<AllUsers />} />
-          <Route path="all-products" element={<AllProducts />} />
-          <Route path="all-orders" element={<AllOrders />} />
-          <Route path="system-health" element={<SystemHealth />} />
-        </Route>
+        <Route path="/admin-panel/*" element={<Navigate to="/" replace />} />
       </Routes>
       <Footer />
     </div>

@@ -12,6 +12,13 @@ const AdminPanel = () => {
     const location = useLocation();
 
     const { currentUser } = useAuth();
+
+    // Guard: if user is null (e.g. just logged out), bail before rendering
+    // and let the route tree in App.jsx handle the redirect.
+    if (!currentUser) {
+      return null;
+    }
+
     useEffect(() => {
         if (currentUser?.role !== "ADMIN") {
             navigate("/")

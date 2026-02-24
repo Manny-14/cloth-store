@@ -12,6 +12,7 @@ export function useAuth() {
 export function AuthProvider ({ children }) {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isResolvingRole, setIsResolvingRole] = useState(false);
     const userLoggedIn = !!currentUser;
     const ADMIN_SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
@@ -21,6 +22,7 @@ export function AuthProvider ({ children }) {
         let isMounted = true;
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
+                if (isMounted) setIsResolvingRole(true);
                 try {
                     const userRole = await getUserRole(user.uid);
                     if (isMounted) {
@@ -31,6 +33,8 @@ export function AuthProvider ({ children }) {
                     }
                 } catch (error) {
                     console.error("Error fetching user role:", error);
+                } finally {
+                    if (isMounted) setIsResolvingRole(false);
                 }
             } else {
                 setCurrentUser(null);
@@ -80,7 +84,8 @@ export function AuthProvider ({ children }) {
     const value = {
         currentUser,
         userLoggedIn,
-        loading
+        loading,
+        isResolvingRole
     };
 
     return (
