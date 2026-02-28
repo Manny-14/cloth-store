@@ -8,7 +8,6 @@ import quality_icon from "./quality_icon.png";
 import search_icon from "./search_icon.png";
 import support_img from "./support_img.png";
 import menu_icon from "./menu_icon.png";
-import about_img from "./about_img.png";
 import contact_img from "./contact_img.png";
 import razorpay_logo from "./razorpay_logo.png";
 import stripe_logo from "./stripe_logo.png";
@@ -25,7 +24,6 @@ export const assets = {
   bin_icon,
   support_img,
   menu_icon,
-  about_img,
   contact_img,
   razorpay_logo,
   stripe_logo,

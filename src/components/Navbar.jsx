@@ -90,16 +90,6 @@ const Navbar = () => {
           <p>COLLECTION</p>
         </NavLink>
         <NavLink
-          to="/about"
-          className={({ isActive }) =>
-            `flex flex-col items-center gap-1 ${textColor} ${
-              isActive ? "underline" : ""
-            }`
-          }
-        >
-          <p>ABOUT</p>
-        </NavLink>
-        <NavLink
           to="/contact"
           className={({ isActive }) =>
             `flex flex-col items-center gap-1 ${textColor} ${
@@ -236,7 +226,6 @@ const Navbar = () => {
             {[
               { to: "/", label: "Home" },
               { to: "/collection", label: "Collection" },
-              { to: "/about", label: "About" },
               { to: "/contact", label: "Contact" },
             ].map(({ to, label }) => (
               <NavLink

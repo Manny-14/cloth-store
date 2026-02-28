@@ -1,7 +1,6 @@
 import React from "react"
 import { assets } from "../assets/assets"
 import Title from "../components/Title"
-import NewsletterBox from "../components/NewsletterBox"
 import { ShopContext } from "../context/ShopContext"
 const Contact = () => {
 
@@ -27,7 +26,6 @@ const Contact = () => {
         <button className={`${theme === "light" ? "bg-black text-white hover:bg-white hover:text-black" : "bg-white text-black hover:bg-black hover:text-white"} border rounded px-8 py-4 text-sm transition-all duration-300`}>Explore Jobs</button> */}
         </div>
       </div>
-      <NewsletterBox />
     </div>
   )
 }
