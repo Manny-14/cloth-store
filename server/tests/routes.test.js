@@ -94,6 +94,22 @@ describe("server routes", () => {
     expect(body.error).toContain("lineItems is required");
   });
 
+  it("POST /create-checkout-session returns 503 when checkout auth is not configured", async () => {
+    const response = await fetch(`${baseUrl}/create-checkout-session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        lineItems: [{ priceId: "price_test_123", quantity: 1 }],
+      }),
+    });
+
+    const body = await response.json();
+    expect(response.status).toBe(503);
+    expect(body.error).toContain("Checkout auth is not configured");
+  });
+
   it("POST /checkout/finalize-session rejects missing sessionId", async () => {
     const response = await fetch(`${baseUrl}/checkout/finalize-session`, {
       method: "POST",

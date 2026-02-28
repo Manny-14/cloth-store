@@ -5,7 +5,7 @@ import Title from "../components/Title";
 import { ShopContext } from "../context/ShopContext";
 import { useAuth } from "../context/authContext";
 import { toast } from "react-toastify";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { createStripeCheckoutSession } from "../helper/stripe";
 import { calculateShippingFee, estimateCartWeightKg } from "../helper/shipping";
 
@@ -38,6 +38,7 @@ const toNumber = (value) => {
 
 const PlaceOrder = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const {
     theme,
     cartItems,
@@ -154,6 +155,12 @@ const PlaceOrder = () => {
       return;
     }
 
+    if (!currentUser) {
+      toast.error("Please sign in to continue checkout.");
+      navigate("/login");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const validationErrors = [];
@@ -212,13 +219,14 @@ const PlaceOrder = () => {
         const origin = window.location.origin;
         const basePath = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
         const customerName = `${formData.firstName} ${formData.lastName}`.trim();
+        const authToken = await currentUser.getIdToken();
         const { url } = await createStripeCheckoutSession({
           lineItems: lineItemsWithPrice,
-          customerEmail: formData.email,
+          customerEmail: currentUser.email || formData.email,
           successUrl: `${origin}${basePath}/#/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
           cancelUrl: `${origin}${basePath}/#/checkout/cancel`,
           metadata: {
-            userId: currentUser?.uid || "guest",
+            userId: currentUser.uid,
             customerName,
             checkoutMode: isBuyNowFlow ? "buy_now" : "cart",
             deliveryMethod,
@@ -229,6 +237,8 @@ const PlaceOrder = () => {
             shippingCountry: formData.country,
             shippingPhone: formData.phone,
           },
+        }, {
+          authToken,
         });
 
         if (url) {

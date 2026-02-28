@@ -271,6 +271,30 @@ app.post("/create-checkout-session", checkoutLimiter, async (req, res) => {
       return res.status(400).json({ error: "lineItems is required and must be a non-empty array" });
     }
 
+    if (!adminAuth) {
+      return res.status(503).json({
+        error: "Checkout auth is not configured on server.",
+      });
+    }
+
+    const authHeader = req.headers.authorization || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Missing Authorization bearer token" });
+    }
+
+    const idToken = authHeader.slice("Bearer ".length).trim();
+    if (!idToken) {
+      return res.status(401).json({ error: "Invalid bearer token" });
+    }
+
+    let checkoutUser;
+    try {
+      checkoutUser = await adminAuth.verifyIdToken(idToken);
+    } catch (error) {
+      console.error("Checkout auth verification failed", error);
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const sanitizedItems = [];
     const lineItemMeta = {}; // keyed by index → { size, firebaseProductId }
     let subtotal = 0;
@@ -325,6 +349,12 @@ app.post("/create-checkout-session", checkoutLimiter, async (req, res) => {
       return acc;
     }, {});
 
+    if (normalizedMetadata.userId && normalizedMetadata.userId !== checkoutUser.uid) {
+      return res.status(403).json({ error: "Checkout user mismatch" });
+    }
+
+    normalizedMetadata.userId = checkoutUser.uid;
+
     const deliveryMethod = normalizedMetadata.deliveryMethod || "standard_shipping";
     const computedShippingFee = calculateShippingFee({
       subtotal,
@@ -358,7 +388,7 @@ app.post("/create-checkout-session", checkoutLimiter, async (req, res) => {
       mode: "payment",
       line_items: sanitizedItems,
       allow_promotion_codes: true,
-      customer_email: customerEmail,
+      customer_email: checkoutUser.email || customerEmail,
       success_url: successUrl || `${CLIENT_ORIGIN}/#/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: cancelUrl || `${CLIENT_ORIGIN}/#/checkout/cancel`,
       metadata: sessionMetadata,
