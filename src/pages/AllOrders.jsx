@@ -8,7 +8,9 @@ import { useAuth } from "../context/authContext";
 import {
   DEFAULT_ORDER_STATUS,
   ORDER_STATUS_OPTIONS,
+  DISPUTE_STATUS,
   formatOrderStatusLabel,
+  isDisputeActive,
 } from "../helper/orderStatus";
 import { updateOrderDeliveryByAdmin } from "../helper/adminOrders";
 
@@ -34,7 +36,7 @@ const formatDate = (timestamp) => {
   }
 };
 
-const statusOptions = ["all", ...ORDER_STATUS_OPTIONS];
+const statusOptions = ["all", "disputed", ...ORDER_STATUS_OPTIONS];
 
 const AllOrders = () => {
   const { theme, currency } = React.useContext(ShopContext);
@@ -70,6 +72,9 @@ const AllOrders = () => {
 
   const filteredOrders = React.useMemo(() => {
     if (statusFilter === "all") return orders;
+    if (statusFilter === "disputed") {
+      return orders.filter((order) => !!order.dispute?.status);
+    }
     return orders.filter(
       (order) => (order.delivery?.status || order.status || DEFAULT_ORDER_STATUS) === statusFilter
     );
@@ -161,7 +166,11 @@ const AllOrders = () => {
           >
             {statusOptions.map((option) => (
               <option key={option} value={option}>
-                {option === "all" ? "All" : formatOrderStatusLabel(option)}
+                {option === "all"
+                  ? "All"
+                  : option === "disputed"
+                    ? "⚠ Disputed"
+                    : formatOrderStatusLabel(option)}
               </option>
             ))}
           </select>
@@ -194,6 +203,19 @@ const AllOrders = () => {
                 </p>
               </div>
               <div className="flex gap-3 flex-wrap text-sm">
+                {order.dispute?.status && (
+                  <span
+                    className={`px-3 py-1 rounded-full uppercase text-xs font-bold ${
+                      isDisputeActive(order.dispute.status)
+                        ? "bg-red-500/15 text-red-600 dark:text-red-400"
+                        : order.dispute.status === DISPUTE_STATUS.WON
+                          ? "bg-green-500/15 text-green-600 dark:text-green-400"
+                          : "bg-orange-500/15 text-orange-600 dark:text-orange-400"
+                    }`}
+                  >
+                    ⚠ {formatOrderStatusLabel(order.dispute.status)}
+                  </span>
+                )}
                 <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-500 uppercase text-xs">
                   {order.delivery?.status || order.status || DEFAULT_ORDER_STATUS}
                 </span>
@@ -238,6 +260,60 @@ const AllOrders = () => {
                 {" "}
                 {order.shippingAddress.state} {order.shippingAddress.zip}, {" "}
                 {order.shippingAddress.country}. Phone: {order.shippingAddress.phone}
+              </div>
+            )}
+
+            {order.dispute?.status && (
+              <div
+                className={`border rounded p-3 ${
+                  isDisputeActive(order.dispute.status)
+                    ? "border-red-400 bg-red-500/5"
+                    : order.dispute.status === DISPUTE_STATUS.WON
+                      ? "border-green-400 bg-green-500/5"
+                      : "border-orange-400 bg-orange-500/5"
+                }`}
+              >
+                <p className="text-xs font-semibold mb-2 text-red-600 dark:text-red-400">
+                  Stripe Dispute Details
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+                  <div>
+                    <span className={mutedText}>Status: </span>
+                    <span className="font-medium capitalize">
+                      {formatOrderStatusLabel(order.dispute.status)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className={mutedText}>Reason: </span>
+                    <span className="font-medium capitalize">
+                      {(order.dispute.reason || "unknown").replace(/_/g, " ")}
+                    </span>
+                  </div>
+                  <div>
+                    <span className={mutedText}>Amount: </span>
+                    <span className="font-medium">
+                      {currency}
+                      {((order.dispute.amount || 0) / 100).toFixed(2)}
+                    </span>
+                  </div>
+                  {order.dispute.evidenceDueBy && isDisputeActive(order.dispute.status) && (
+                    <div>
+                      <span className={mutedText}>Evidence due: </span>
+                      <span className="font-medium text-red-600 dark:text-red-400">
+                        {new Date(order.dispute.evidenceDueBy).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                {order.dispute.stripeDisputeId && (
+                  <p className={`text-xs mt-2 ${mutedText}`}>
+                    Dispute ID: {order.dispute.stripeDisputeId}
+                  </p>
+                )}
               </div>
             )}
 

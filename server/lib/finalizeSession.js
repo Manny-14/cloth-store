@@ -161,6 +161,7 @@ export const createFinalizePaidCheckoutSession = ({
       },
       guestCheckout: !session.metadata?.userId,
       stripeSessionId: session.id,
+      paymentIntentId: session.payment_intent || null,
       checkoutMode,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),

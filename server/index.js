@@ -10,6 +10,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { createFinalizePaidCheckoutSession } from "./lib/finalizeSession.js";
+import { createHandleDispute } from "./lib/handleDispute.js";
 
 dotenv.config();
 
@@ -228,6 +229,11 @@ const finalizePaidCheckoutSession = createFinalizePaidCheckoutSession({
   stripe,
   FieldValue,
   toNumber,
+});
+
+const { onDisputeCreated, onDisputeUpdated, onDisputeClosed } = createHandleDispute({
+  adminDb,
+  FieldValue,
 });
 
 // CORS for the frontend
@@ -528,6 +534,36 @@ app.post(
           console.log("Checkout completed and finalized:", session.id, result);
         } catch (error) {
           console.error("Webhook finalization failed", error);
+        }
+        break;
+      }
+      case "charge.dispute.created": {
+        const dispute = event.data.object;
+        try {
+          const result = await onDisputeCreated(dispute);
+          console.log("Dispute created:", dispute.id, result);
+        } catch (error) {
+          console.error("Dispute created handler failed", error);
+        }
+        break;
+      }
+      case "charge.dispute.updated": {
+        const dispute = event.data.object;
+        try {
+          const result = await onDisputeUpdated(dispute);
+          console.log("Dispute updated:", dispute.id, result);
+        } catch (error) {
+          console.error("Dispute updated handler failed", error);
+        }
+        break;
+      }
+      case "charge.dispute.closed": {
+        const dispute = event.data.object;
+        try {
+          const result = await onDisputeClosed(dispute);
+          console.log("Dispute closed:", dispute.id, result);
+        } catch (error) {
+          console.error("Dispute closed handler failed", error);
         }
         break;
       }
