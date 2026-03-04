@@ -36,6 +36,41 @@ Fill in:
 npm run dev
 ```
 
+### Tailscale phone testing (no public deploy)
+
+If your phone and laptop are on the same Tailscale tailnet, you can test directly from phone.
+
+1. Get your laptop's Tailscale IPv4 from the Tailscale app/UI.
+2. In `server/.env`, set `CLIENT_ORIGIN` to include both local and Tailscale frontend origins:
+
+```env
+CLIENT_ORIGIN=http://localhost:5173,http://<TAILSCALE_IP>:5173
+```
+
+3. In frontend `.env`, set the API server URL:
+
+```env
+VITE_STRIPE_SERVER_URL=http://<TAILSCALE_IP>:4242
+```
+
+4. Run frontend with host binding:
+
+```bash
+npm run dev:host
+```
+
+5. Open on phone:
+
+```text
+http://<TAILSCALE_IP>:5173/Clothify-React/
+```
+
+6. Backend health check from phone:
+
+```text
+http://<TAILSCALE_IP>:4242/health
+```
+
 4) Forward webhooks in test mode (optional but recommended)
 
 ```bash

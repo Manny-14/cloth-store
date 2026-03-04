@@ -38,6 +38,11 @@ const allowedPriceIds = ALLOWED_PRICE_IDS
   .map((id) => id.trim())
   .filter(Boolean);
 
+const allowedClientOrigins = CLIENT_ORIGIN
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const toNumber = (value) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -239,7 +244,20 @@ const { onDisputeCreated, onDisputeUpdated, onDisputeClosed } = createHandleDisp
 // CORS for the frontend
 app.use(
   cors({
-    origin: CLIENT_ORIGIN,
+    origin: (origin, callback) => {
+      // Allow non-browser requests (curl, server-to-server)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      if (allowedClientOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );
