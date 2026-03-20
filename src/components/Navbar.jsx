@@ -58,14 +58,16 @@ const Navbar = () => {
     >
       <NavLink
         to="/"
-        className="flex flex-col items-center gap-1 text-[1.125em]"
+        className="flex flex-col items-center gap-1"
       >
-        <p>CLOTHIFY</p>
-        <hr
-          className={`w-2/4 border-none h-[0.09375em] ${
-            theme === "dark" ? "bg-white" : "bg-gray-700"
-          }`}
-        />
+        <div className="leading-none text-center select-none">
+          <p className="text-[1.2rem] sm:text-[1.3rem] font-black italic tracking-[0.08em]">
+            Dress
+          </p>
+          <p className="text-[0.65rem] sm:text-[0.72rem] font-medium tracking-[0.22em] mt-0.5">
+            ✦ IT UP ✦
+          </p>
+        </div>
       </NavLink>
 
       <ul className="hidden sm:flex gap-5 text-sm">
