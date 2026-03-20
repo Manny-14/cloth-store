@@ -4,7 +4,7 @@ import { calculateShippingFee, estimateCartWeightKg } from "../shipping";
 describe("shipping helpers", () => {
   it("applies standard shipping fee below free-shipping threshold", () => {
     const fee = calculateShippingFee({
-      subtotal: 120,
+      subtotal: 70,
       deliveryMethod: "standard_shipping",
       estimatedWeightKg: 1.5,
     });
@@ -12,10 +12,10 @@ describe("shipping helpers", () => {
     expect(fee).toBe(7.99);
   });
 
-  it("applies free standard shipping at and above $150", () => {
+  it("applies free standard shipping at and above $75", () => {
     expect(
       calculateShippingFee({
-        subtotal: 150,
+        subtotal: 75,
         deliveryMethod: "standard_shipping",
         estimatedWeightKg: 0,
       })
@@ -42,7 +42,7 @@ describe("shipping helpers", () => {
 
   it("adds weight surcharge for heavy carts", () => {
     const midWeightFee = calculateShippingFee({
-      subtotal: 120,
+      subtotal: 70,
       deliveryMethod: "standard_shipping",
       estimatedWeightKg: 4.2,
     });

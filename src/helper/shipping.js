@@ -33,7 +33,7 @@ export const calculateShippingFee = ({
   const normalizedWeight = toNumber(estimatedWeightKg);
 
   // Temporary baseline rules (Nashville seller)
-  const FREE_STANDARD_THRESHOLD = 150;
+  const FREE_STANDARD_THRESHOLD = 75;
   const STANDARD_BASE = 7.99;
   const DOORSTEP_BASE = 12.99;
 
