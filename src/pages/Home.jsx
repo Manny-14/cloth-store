@@ -7,7 +7,7 @@ const Home = () => {
   const textColor = theme === "dark" ? "text-gray-100" : "text-gray-900";
 
   return (
-    <div className={`space-y-10 transition-colors ${textColor}`}>
+    <div className={`space-y-10 transition-colors border-t pt-10 ${textColor}`}>
       <LatestCollection />
       {/* <BestSeller /> removed for now */}
     </div>

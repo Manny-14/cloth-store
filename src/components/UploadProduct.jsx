@@ -184,7 +184,7 @@ const UploadProduct = ({ closeUploadProduct }) => {
             />
           </div>
 
-          <p className="text-center mt-1">Quantity Available</p>
+          <p className="text-center mt-1">Stock Available (use S for non-size products)</p>
           <div className="flex gap-2 justify-between">
             <div className="flex gap-1 items-center flex-1 min-w-0">
               <label htmlFor="smallQuantity">S</label>

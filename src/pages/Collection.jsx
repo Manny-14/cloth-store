@@ -3,6 +3,7 @@ import { assets } from "../assets/assets";
 import Title from "../components/Title";
 import ProductItem from "../components/ProductItem";
 import { ShopContext } from "../context/ShopContext";
+import { productCategory, productType } from "../helper/dropdowns";
 
 const Collection = () => {
   const {
@@ -90,33 +91,17 @@ const Collection = () => {
         >
           <p className="mb-3 text-sm font-medium">CATEGORIES</p>
           <div className={`flex flex-col gap-2 text-sm font-light ${theme === "light" ? "text-gray-700" : "text-white"}`}>
-            <p className="flex gap-2">
-              <input
-                type="checkbox"
-                className="w-3"
-                value={"men"}
-                onChange={toggleCategory}
-              />{" "}
-              Men
-            </p>
-            <p className="flex gap-2">
-              <input
-                type="checkbox"
-                className="w-3"
-                value={"women"}
-                onChange={toggleCategory}
-              />{" "}
-              Women
-            </p>
-            <p className="flex gap-2">
-              <input
-                type="checkbox"
-                className="w-3"
-                value={"kids"}
-                onChange={toggleCategory}
-              />{" "}
-              Kids
-            </p>
+            {productCategory.map((entry) => (
+              <p className="flex gap-2" key={entry.value}>
+                <input
+                  type="checkbox"
+                  className="w-3"
+                  value={entry.value}
+                  onChange={toggleCategory}
+                />
+                {entry.label}
+              </p>
+            ))}
           </div>
         </div>
 
@@ -128,33 +113,17 @@ const Collection = () => {
         >
           <p className="mb-3 text-sm font-medium">TYPE</p>
           <div className={`flex flex-col gap-2 text-sm font-light ${theme === "light" ? "text-gray-700" : "text-white"}`}>
-            <p className="flex gap-2">
-              <input
-                type="checkbox"
-                className="w-3"
-                value={"topwear"}
-                onChange={toggleType}
-              />
-              Topwear
-            </p>
-            <p className="flex gap-2">
-              <input
-                type="checkbox"
-                className="w-3"
-                value={"bottomwear"}
-                onChange={toggleType}
-              />
-              Bottomwear
-            </p>
-            <p className="flex gap-2">
-              <input
-                type="checkbox"
-                className="w-3"
-                value={"winterwear"}
-                onChange={toggleType}
-              />
-              Winterwear
-            </p>
+            {productType.map((entry) => (
+              <p className="flex gap-2" key={entry.value}>
+                <input
+                  type="checkbox"
+                  className="w-3"
+                  value={entry.value}
+                  onChange={toggleType}
+                />
+                {entry.label}
+              </p>
+            ))}
           </div>
         </div>
       </div>

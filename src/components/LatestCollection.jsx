@@ -21,7 +21,7 @@ const LatestCollection = () => {
         <p
           className={`w-3/4 m-auto text-xs sm:text-sm md:text-base ${descriptionColor}`}
         >
-          Take a look at our latest products.
+          Explore beaded jewelry, embroidered tees, towel sets, and handmade accessories.
         </p>
       </div>
       {productsLoading ? (
