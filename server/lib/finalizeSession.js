@@ -83,10 +83,13 @@ export const createFinalizePaidCheckoutSession = ({
       });
 
       const sizeField = resolveSizeFieldKey(size);
+      inventoryAdjustments[productId] = inventoryAdjustments[productId] || {};
       if (sizeField) {
-        inventoryAdjustments[productId] = inventoryAdjustments[productId] || {};
         inventoryAdjustments[productId][sizeField] =
           (inventoryAdjustments[productId][sizeField] || 0) + quantity;
+      } else {
+        inventoryAdjustments[productId].stockQuantity =
+          (inventoryAdjustments[productId].stockQuantity || 0) + quantity;
       }
     });
 

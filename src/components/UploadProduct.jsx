@@ -13,6 +13,8 @@ const UploadProduct = ({ closeUploadProduct }) => {
     productName: "",
     costPrice: "",
     sellingPrice: "",
+    hasSizes: true,
+    stockQuantity: "",
     smallQuantity: "",
     mediumQuantity: "",
     largeQuantity: "",
@@ -82,10 +84,26 @@ const UploadProduct = ({ closeUploadProduct }) => {
       ...productData,
       costPrice: toNumber(productData.costPrice),
       sellingPrice: toNumber(productData.sellingPrice),
-      smallQuantity: toNumber(productData.smallQuantity),
-      mediumQuantity: toNumber(productData.mediumQuantity),
-      largeQuantity: toNumber(productData.largeQuantity),
-      xlQuantity: toNumber(productData.xlQuantity),
+      hasSizes: Boolean(productData.hasSizes),
+      stockQuantity: Boolean(productData.hasSizes)
+        ? toNumber(productData.smallQuantity) +
+          toNumber(productData.mediumQuantity) +
+          toNumber(productData.largeQuantity) +
+          toNumber(productData.xlQuantity)
+        : toNumber(productData.stockQuantity),
+      smallQuantity: Boolean(productData.hasSizes)
+        ? toNumber(productData.smallQuantity)
+        : 0,
+      mediumQuantity: Boolean(productData.hasSizes)
+        ? toNumber(productData.mediumQuantity)
+        : 0,
+      largeQuantity: Boolean(productData.hasSizes)
+        ? toNumber(productData.largeQuantity)
+        : 0,
+      xlQuantity: Boolean(productData.hasSizes)
+        ? toNumber(productData.xlQuantity)
+        : 0,
+      sizes: Boolean(productData.hasSizes) ? ["S", "M", "L", "XL"] : ["ONE_SIZE"],
       images: [...uploadedImages],
     };
     console.log("payload", payload);
@@ -98,6 +116,8 @@ const UploadProduct = ({ closeUploadProduct }) => {
         productName: "",
         costPrice: "",
         sellingPrice: "",
+        hasSizes: true,
+        stockQuantity: "",
         smallQuantity: "",
         mediumQuantity: "",
         largeQuantity: "",
@@ -184,69 +204,122 @@ const UploadProduct = ({ closeUploadProduct }) => {
             />
           </div>
 
-          <p className="text-center mt-1">Stock Available (use S for non-size products)</p>
-          <div className="flex gap-2 justify-between">
-            <div className="flex gap-1 items-center flex-1 min-w-0">
-              <label htmlFor="smallQuantity">S</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+            <label className="flex items-center gap-2">
               <input
-                className={`${
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
-                type="number"
-                id="smallQuantity"
-                placeholder="0"
-                min="0"
-                name="smallQuantity"
-                value={productData.smallQuantity}
-                onChange={handleOnChange}
+                type="radio"
+                name="hasSizes"
+                checked={Boolean(productData.hasSizes)}
+                onChange={() =>
+                  setProductData((prev) => ({ ...prev, hasSizes: true, stockQuantity: "" }))
+                }
               />
-            </div>
-            <div className="flex gap-1 items-center flex-1 min-w-0">
-              <label htmlFor="mediumQuantity">M</label>
+              Product has sizes
+            </label>
+            <label className="flex items-center gap-2">
               <input
-                className={`${
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
-                type="number"
-                id="mediumQuantity"
-                placeholder="0"
-                min="0"
-                name="mediumQuantity"
-                value={productData.mediumQuantity}
-                onChange={handleOnChange}
+                type="radio"
+                name="hasSizes"
+                checked={!Boolean(productData.hasSizes)}
+                onChange={() =>
+                  setProductData((prev) => ({
+                    ...prev,
+                    hasSizes: false,
+                    smallQuantity: "",
+                    mediumQuantity: "",
+                    largeQuantity: "",
+                    xlQuantity: "",
+                  }))
+                }
               />
-            </div>
-            <div className="flex gap-1 items-center flex-1 min-w-0">
-              <label htmlFor="largeQuantity">L</label>
-              <input
-                className={`${
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
-                type="number"
-                id="largeQuantity"
-                placeholder="0"
-                min="0"
-                name="largeQuantity"
-                value={productData.largeQuantity}
-                onChange={handleOnChange}
-              />
-            </div>
-            <div className="flex gap-1 items-center flex-1 min-w-0">
-              <label htmlFor="xlQuantity">XL</label>
-              <input
-                className={`${
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
-                type="number"
-                id="xlQuantity"
-                placeholder="0"
-                min="0"
-                name="xlQuantity"
-                value={productData.xlQuantity}
-                onChange={handleOnChange}
-              />
-            </div>
+              Product is non-sized
+            </label>
           </div>
+
+          {Boolean(productData.hasSizes) ? (
+            <>
+              <p className="text-center mt-1">Quantity Available by Size</p>
+              <div className="flex gap-2 justify-between">
+                <div className="flex gap-1 items-center flex-1 min-w-0">
+                  <label htmlFor="smallQuantity">S</label>
+                  <input
+                    className={`${
+                      theme === "light" ? "bg-slate-50" : "bg-slate-900"
+                    } border-dashed border-2 rounded w-full min-w-0 p-2`}
+                    type="number"
+                    id="smallQuantity"
+                    placeholder="0"
+                    min="0"
+                    name="smallQuantity"
+                    value={productData.smallQuantity}
+                    onChange={handleOnChange}
+                  />
+                </div>
+                <div className="flex gap-1 items-center flex-1 min-w-0">
+                  <label htmlFor="mediumQuantity">M</label>
+                  <input
+                    className={`${
+                      theme === "light" ? "bg-slate-50" : "bg-slate-900"
+                    } border-dashed border-2 rounded w-full min-w-0 p-2`}
+                    type="number"
+                    id="mediumQuantity"
+                    placeholder="0"
+                    min="0"
+                    name="mediumQuantity"
+                    value={productData.mediumQuantity}
+                    onChange={handleOnChange}
+                  />
+                </div>
+                <div className="flex gap-1 items-center flex-1 min-w-0">
+                  <label htmlFor="largeQuantity">L</label>
+                  <input
+                    className={`${
+                      theme === "light" ? "bg-slate-50" : "bg-slate-900"
+                    } border-dashed border-2 rounded w-full min-w-0 p-2`}
+                    type="number"
+                    id="largeQuantity"
+                    placeholder="0"
+                    min="0"
+                    name="largeQuantity"
+                    value={productData.largeQuantity}
+                    onChange={handleOnChange}
+                  />
+                </div>
+                <div className="flex gap-1 items-center flex-1 min-w-0">
+                  <label htmlFor="xlQuantity">XL</label>
+                  <input
+                    className={`${
+                      theme === "light" ? "bg-slate-50" : "bg-slate-900"
+                    } border-dashed border-2 rounded w-full min-w-0 p-2`}
+                    type="number"
+                    id="xlQuantity"
+                    placeholder="0"
+                    min="0"
+                    name="xlQuantity"
+                    value={productData.xlQuantity}
+                    onChange={handleOnChange}
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 gap-2 mt-1">
+              <label htmlFor="stockQuantity">Stock Quantity</label>
+              <input
+                className={`${
+                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
+                } border-dashed border-2 rounded p-2`}
+                type="number"
+                id="stockQuantity"
+                placeholder="0"
+                min="0"
+                name="stockQuantity"
+                value={productData.stockQuantity}
+                onChange={handleOnChange}
+                required={!Boolean(productData.hasSizes)}
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-x-4">
             <div className="flex flex-col">

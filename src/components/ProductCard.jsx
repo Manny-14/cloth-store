@@ -10,6 +10,8 @@ const ProductCard = ({
   currency = "$",
   isSoldOut = false,
 }) => {
+  const isSizeBasedProduct = product.hasSizes !== false;
+
   return (
     <div
       className={`border rounded-lg shadow-md p-4 flex flex-col gap-2 transition hover:shadow-lg ${
@@ -50,18 +52,26 @@ const ProductCard = ({
           </span>
         </div>
         <div className="flex flex-wrap gap-2 text-xs">
-          <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
-            S: {product.smallQuantity || 0}
-          </span>
-          <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
-            M: {product.mediumQuantity || 0}
-          </span>
-          <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
-            L: {product.largeQuantity || 0}
-          </span>
-          <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
-            XL: {product.xlQuantity || 0}
-          </span>
+          {isSizeBasedProduct ? (
+            <>
+              <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                S: {product.smallQuantity || 0}
+              </span>
+              <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                M: {product.mediumQuantity || 0}
+              </span>
+              <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                L: {product.largeQuantity || 0}
+              </span>
+              <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+                XL: {product.xlQuantity || 0}
+              </span>
+            </>
+          ) : (
+            <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+              Stock: {product.stockQuantity || product.totalQuantity || 0}
+            </span>
+          )}
         </div>
       </div>
       <p className="text-xs mt-2 line-clamp-2">{product.description}</p>

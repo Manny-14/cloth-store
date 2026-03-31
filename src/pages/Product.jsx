@@ -5,6 +5,7 @@ import { assets } from "../assets/assets";
 import RelatedProducts from "../components/RelatedProducts";
 import { getProduct } from "../../firebase/products/getProduct";
 import { toast } from "react-toastify";
+import { NON_SIZED_KEY, hasSizeVariants } from "../helper/inventory";
 const Product = () => {
   const { productId } = useParams();
   const {
@@ -46,6 +47,8 @@ const Product = () => {
             .filter(({ key }) => Number(product[key]) > 0)
             .map(({ label }) => label);
 
+      const hasSizes = hasSizeVariants(product);
+
       return {
         ...product,
         _id: product._id || product.id || product.productId || productId,
@@ -60,10 +63,12 @@ const Product = () => {
         category: product.category || "misc",
         subCategory: product.subCategory || product.type || "general",
         image: imageArray,
-        sizes:
-          derivedSizes.length > 0
+        hasSizes,
+        sizes: hasSizes
+          ? derivedSizes.length > 0
             ? derivedSizes
-            : ["S", "M", "L", "XL"],
+            : ["S", "M", "L", "XL"]
+          : [NON_SIZED_KEY],
       };
     },
     [productId]
@@ -123,6 +128,13 @@ const Product = () => {
     return getSizeQuantity(productData, size);
   }, [getSizeQuantity, productData, size]);
 
+  React.useEffect(() => {
+    if (!productData) return;
+    if (productData.hasSizes === false) {
+      setSize(NON_SIZED_KEY);
+    }
+  }, [productData]);
+
   const productSoldOut = React.useMemo(() => {
     if (!productData) return true;
     return isSoldOut(productData);
@@ -136,13 +148,20 @@ const Product = () => {
   const handleBuyNow = async () => {
     if (!productData || productSoldOut) return;
 
-    if (!size) {
+    const effectiveSize = productData.hasSizes === false ? NON_SIZED_KEY : size;
+
+    if (!effectiveSize) {
       toast.error("Please select the product size");
       return;
     }
 
-    if (selectedSizeStock <= 0) {
-      toast.error("Selected size is sold out");
+    const stock = getSizeQuantity(productData, effectiveSize);
+    if (stock <= 0) {
+      toast.error(
+        productData.hasSizes === false
+          ? "This product is sold out"
+          : "Selected size is sold out"
+      );
       return;
     }
 
@@ -150,7 +169,7 @@ const Product = () => {
       state: {
         buyNowItem: {
           productId: productData._id,
-          size,
+          size: effectiveSize,
           quantity: 1,
         },
       },
@@ -238,37 +257,56 @@ const Product = () => {
           </p>
           <p className="mt-3 md:w-4/5 text-sm sm:text-base leading-relaxed">{productData.description}</p>
           <div className="flex flex-col gap-4 my-6 sm:my-8">
-            <p className="text-sm font-medium">Select Size</p>
-            <div className="flex flex-wrap gap-2">
-              {productData.sizes.map((item, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSize(item)}
-                  className={`border min-w-[2.75rem] py-2.5 px-4 text-sm ${
-                    item === size
-                      ? "bg-blue-950 text-white border-blue-950"
-                      : "bg-gray-100 text-black"
-                  } rounded active:scale-95 transition-transform`}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-            {size && (
+            {productData.hasSizes !== false ? (
+              <>
+                <p className="text-sm font-medium">Select Size</p>
+                <div className="flex flex-wrap gap-2">
+                  {productData.sizes.map((item, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSize(item)}
+                      className={`border min-w-[2.75rem] py-2.5 px-4 text-sm ${
+                        item === size
+                          ? "bg-blue-950 text-white border-blue-950"
+                          : "bg-gray-100 text-black"
+                      } rounded active:scale-95 transition-transform`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+                {size && (
+                  <p
+                    className={`text-sm ${
+                      selectedSizeStock > 0 ? "text-green-600" : "text-red-500"
+                    }`}
+                  >
+                    {selectedSizeStock > 0
+                      ? `${selectedSizeStock} in stock`
+                      : "Selected size is sold out"}
+                  </p>
+                )}
+              </>
+            ) : (
               <p
                 className={`text-sm ${
                   selectedSizeStock > 0 ? "text-green-600" : "text-red-500"
                 }`}
               >
                 {selectedSizeStock > 0
-                  ? `${selectedSizeStock} in stock`
-                  : "Selected size is sold out"}
+                  ? `${selectedSizeStock} available`
+                  : "This product is sold out"}
               </p>
             )}
           </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <button
-              onClick={() => addToCart(productData._id, size)}
+              onClick={() =>
+                addToCart(
+                  productData._id,
+                  productData.hasSizes === false ? NON_SIZED_KEY : size
+                )
+              }
               disabled={productSoldOut}
               className={`${
                 theme === "light"

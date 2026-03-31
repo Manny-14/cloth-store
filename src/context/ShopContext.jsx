@@ -5,6 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { getAllProducts } from "../../firebase/products/getAllProducts";
 import {
   DEFAULT_SIZE_ORDER,
+  NON_SIZED_KEY,
+  getTotalStockQuantity,
+  hasSizeVariants,
   normalizeSizeLabel as normalizeSizeLabelBase,
   resolveSizeFieldKey,
 } from "../helper/inventory";
@@ -28,8 +31,13 @@ const ShopContextProvider = (props) => {
     JSON.parse(localStorage.getItem("cartItems")) || {}
   );
   const canonicalSizeOrder = React.useMemo(() => DEFAULT_SIZE_ORDER, []);
+  const oneSizeKey = React.useMemo(() => NON_SIZED_KEY, []);
   const normalizeSizeLabel = React.useCallback(
     (size) => normalizeSizeLabelBase(size),
+    []
+  );
+  const productHasSizes = React.useCallback(
+    (product) => hasSizeVariants(product),
     []
   );
   const resolveSizeField = React.useCallback(
@@ -90,6 +98,11 @@ const ShopContextProvider = (props) => {
   const getSizeQuantity = React.useCallback(
     (product, size) => {
       if (!product) return 0;
+
+      if (!productHasSizes(product)) {
+        return getTotalStockQuantity(product);
+      }
+
       const normalizedSize = normalizeSizeLabel(size);
       const sizeField = resolveSizeField(size);
 
@@ -122,12 +135,17 @@ const ShopContextProvider = (props) => {
 
       return 0;
     },
-    [normalizeSizeLabel, resolveSizeField, parseNumber]
+    [normalizeSizeLabel, resolveSizeField, parseNumber, productHasSizes]
   );
 
   const getAvailableSizes = React.useCallback(
     (product, { includeCurrentSize } = {}) => {
       if (!product) return [];
+
+      if (!productHasSizes(product)) {
+        return [oneSizeKey];
+      }
+
       const normalizedCurrent = normalizeSizeLabel(includeCurrentSize);
       const baseSizes =
         Array.isArray(product.sizes) && product.sizes.length
@@ -148,20 +166,29 @@ const ShopContextProvider = (props) => {
           return normalizedCurrent && normalizedCurrent === size;
         });
     },
-    [canonicalSizeOrder, getSizeQuantity, normalizeSizeLabel]
+    [
+      canonicalSizeOrder,
+      getSizeQuantity,
+      normalizeSizeLabel,
+      oneSizeKey,
+      productHasSizes,
+    ]
   );
 
   const addToCart = async (itemId, size) => {
-    const normalizedSize = normalizeSizeLabel(size);
-    if (!normalizedSize) {
-      toast.error("Please select the product size");
-      return;
-    }
-
     const product = findProductById(itemId);
 
     if (!product) {
       toast.error("Product unavailable. Please refresh and try again.");
+      return;
+    }
+
+    const normalizedSize = productHasSizes(product)
+      ? normalizeSizeLabel(size)
+      : oneSizeKey;
+
+    if (!normalizedSize) {
+      toast.error("Please select the product size");
       return;
     }
 
@@ -173,16 +200,20 @@ const ShopContextProvider = (props) => {
     const sizeStock = getSizeQuantity(product, normalizedSize);
 
     if (sizeStock <= 0) {
-      toast.error(`Size ${normalizedSize} is sold out.`);
+      if (productHasSizes(product)) {
+        toast.error(`Size ${normalizedSize} is sold out.`);
+      } else {
+        toast.error("This product is sold out.");
+      }
       return;
     }
 
     const currentQuantity = cartItems[itemId]?.[normalizedSize] || 0;
 
     if (currentQuantity >= sizeStock) {
-      toast.info(
-        `You've reached the limit for size ${normalizedSize}. Available stock: ${sizeStock}.`
-      );
+      toast.info(productHasSizes(product)
+        ? `You've reached the limit for size ${normalizedSize}. Available stock: ${sizeStock}.`
+        : `You've reached the available stock (${sizeStock}).`);
       return;
     }
 
@@ -211,7 +242,6 @@ const ShopContextProvider = (props) => {
   };
 
   const updateQuantity = async (itemId, size, quantity) => {
-    const normalizedSize = normalizeSizeLabel(size);
     const requestedQuantity = parseNumber(quantity);
     const product = findProductById(itemId);
 
@@ -224,6 +254,10 @@ const ShopContextProvider = (props) => {
       return;
     }
 
+    const normalizedSize = productHasSizes(product)
+      ? normalizeSizeLabel(size)
+      : oneSizeKey;
+
     const sizeStock = getSizeQuantity(product, normalizedSize);
 
     if (sizeStock <= 0) {
@@ -232,7 +266,11 @@ const ShopContextProvider = (props) => {
         delete nextCart[itemId][normalizedSize];
       }
       commitCartData(nextCart);
-      toast.error(`Size ${normalizedSize} is sold out and was removed from your cart.`);
+      toast.error(
+        productHasSizes(product)
+          ? `Size ${normalizedSize} is sold out and was removed from your cart.`
+          : "This item is sold out and was removed from your cart."
+      );
       return;
     }
 
@@ -252,7 +290,11 @@ const ShopContextProvider = (props) => {
     commitCartData(nextCart);
 
     if (requestedQuantity > sizeStock) {
-      toast.info(`Only ${sizeStock} units available for size ${normalizedSize}.`);
+      toast.info(
+        productHasSizes(product)
+          ? `Only ${sizeStock} units available for size ${normalizedSize}.`
+          : `Only ${sizeStock} units available.`
+      );
     }
   };
 
@@ -276,6 +318,10 @@ const ShopContextProvider = (props) => {
       delete nextCart[itemId];
       commitCartData(nextCart);
       toast.warn("Product no longer available and was removed from your cart.");
+      return;
+    }
+
+    if (!productHasSizes(product)) {
       return;
     }
 
@@ -368,6 +414,9 @@ const ShopContextProvider = (props) => {
       const smallQuantity = parseNumber(
         product.smallQuantity ?? product?.sizes?.S
       );
+      const extraSmallQuantity = parseNumber(
+        product.extraSmallQuantity ?? product?.sizes?.XS
+      );
       const mediumQuantity = parseNumber(
         product.mediumQuantity ?? product?.sizes?.M
       );
@@ -375,9 +424,25 @@ const ShopContextProvider = (props) => {
         product.largeQuantity ?? product?.sizes?.L
       );
       const xlQuantity = parseNumber(product.xlQuantity ?? product?.sizes?.XL);
+      const xxlQuantity = parseNumber(product.xxlQuantity ?? product?.sizes?.XXL);
 
-      const totalQuantity =
-        smallQuantity + mediumQuantity + largeQuantity + xlQuantity;
+      const inferredHasSizes = hasSizeVariants(product);
+
+      const derivedSizedTotal =
+        extraSmallQuantity +
+        smallQuantity +
+        mediumQuantity +
+        largeQuantity +
+        xlQuantity +
+        xxlQuantity;
+
+      const nonSizedStockQuantity = parseNumber(
+        product.stockQuantity ?? product.totalQuantity ?? product.quantity
+      );
+
+      const totalQuantity = inferredHasSizes
+        ? derivedSizedTotal
+        : nonSizedStockQuantity;
 
       const resolvedId =
         product.id ||
@@ -405,10 +470,19 @@ const ShopContextProvider = (props) => {
         category: product.category || "general",
         subCategory: product.subCategory || product.type || "general",
         type: product.type || product.subCategory || "general",
+        hasSizes: inferredHasSizes,
+        sizes: inferredHasSizes
+          ? Array.isArray(product.sizes) && product.sizes.length
+            ? product.sizes
+            : ["S", "M", "L", "XL"]
+          : [oneSizeKey],
+        extraSmallQuantity,
         smallQuantity,
         mediumQuantity,
         largeQuantity,
         xlQuantity,
+        xxlQuantity,
+        stockQuantity: inferredHasSizes ? derivedSizedTotal : nonSizedStockQuantity,
         totalQuantity,
         status: product.status || (totalQuantity > 0 ? "active" : "sold-out"),
         isSoldOut:
@@ -419,7 +493,7 @@ const ShopContextProvider = (props) => {
 
       return normalized;
     },
-    [parseNumber]
+    [oneSizeKey, parseNumber]
   );
 
   const refreshProducts = React.useCallback(async () => {
@@ -451,13 +525,10 @@ const ShopContextProvider = (props) => {
       }
       const total =
         product.totalQuantity ??
-        parseNumber(product.smallQuantity) +
-          parseNumber(product.mediumQuantity) +
-          parseNumber(product.largeQuantity) +
-          parseNumber(product.xlQuantity);
+        getTotalStockQuantity(product);
       return total <= 0;
     },
-    [parseNumber]
+    []
   );
 
   const [theme, setTheme] = React.useState(

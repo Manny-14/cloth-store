@@ -89,6 +89,7 @@ const Cart = () => {
               return null;
             }
 
+            const isSizeBasedProduct = productData.hasSizes !== false;
             const sizeStock = getSizeQuantity(productData, item.size);
             const hitStockLimit = item.quantity >= sizeStock && sizeStock > 0;
             const sizeOptions = getAvailableSizes(productData, {
@@ -115,29 +116,35 @@ const Cart = () => {
                         {currency}
                         {productData.price}
                       </p>
-                      <div className="px-2 sm:px-3 sm:py-1 border text-sm bg-white rounded">
-                        <label className="sr-only" htmlFor={`size-${item._id}-${item.size}`}>
-                          Change size
-                        </label>
-                        <select
-                          id={`size-${item._id}-${item.size}`}
-                          value={item.size}
-                          onChange={(e) =>
-                            changeCartItemSize(item._id, item.size, e.target.value)
-                          }
-                          className="bg-transparent focus:outline-none"
-                        >
-                          {sizeOptions.length > 0 ? (
-                            sizeOptions.map((option) => (
-                              <option value={option} key={option}>
-                                {option}
-                              </option>
-                            ))
-                          ) : (
-                            <option value={item.size}>{item.size}</option>
-                          )}
-                        </select>
-                      </div>
+                      {isSizeBasedProduct ? (
+                        <div className="px-2 sm:px-3 sm:py-1 border text-sm bg-white rounded">
+                          <label className="sr-only" htmlFor={`size-${item._id}-${item.size}`}>
+                            Change size
+                          </label>
+                          <select
+                            id={`size-${item._id}-${item.size}`}
+                            value={item.size}
+                            onChange={(e) =>
+                              changeCartItemSize(item._id, item.size, e.target.value)
+                            }
+                            className="bg-transparent focus:outline-none"
+                          >
+                            {sizeOptions.length > 0 ? (
+                              sizeOptions.map((option) => (
+                                <option value={option} key={option}>
+                                  {option}
+                                </option>
+                              ))
+                            ) : (
+                              <option value={item.size}>{item.size}</option>
+                            )}
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="px-2 sm:px-3 sm:py-1 border text-xs bg-white rounded text-slate-600">
+                          One size
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
