@@ -24,3 +24,46 @@ export async function createStripeCheckoutSession(payload, { authToken = "" } = 
     throw new Error(err?.message || "Network error contacting Stripe server");
   }
 }
+
+export async function ensureStripePriceForProduct({
+  productId = "",
+  productData = {},
+  authToken = "",
+} = {}) {
+  if (!authToken) {
+    throw new Error("Admin authentication is required to sync Stripe pricing.");
+  }
+
+  const body = {
+    productId,
+    productName: productData?.productName || productData?.name || "",
+    description: productData?.description || productData?.productDescription || "",
+    sellingPrice: productData?.sellingPrice ?? productData?.price ?? 0,
+    images: Array.isArray(productData?.images)
+      ? productData.images
+      : Array.isArray(productData?.image)
+      ? productData.image
+      : productData?.image
+      ? [productData.image]
+      : [],
+    stripeProductId: productData?.stripeProductId || "",
+    stripePriceId: productData?.stripePriceId || "",
+  };
+
+  const response = await fetch(`${STRIPE_SERVER_URL}/admin/stripe/ensure-product-price`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    const message = error?.error || `Stripe sync failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  return response.json();
+}

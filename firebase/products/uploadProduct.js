@@ -1,5 +1,6 @@
 import { collection, doc, setDoc } from "firebase/firestore"; 
-import { db } from "../firebase";
+import { auth, db } from "../firebase";
+import { ensureStripePriceForProduct } from "../../src/helper/stripe";
 
 export async function uploadProduct(productData) {
     try {
@@ -12,7 +13,26 @@ export async function uploadProduct(productData) {
             timestamp: new Date().toISOString(),
         };
 
-        await setDoc(newProductRef, productWithTimestamp);
+        const stripeSync = await ensureStripePriceForProduct({
+            productData: productWithTimestamp,
+            authToken: await auth.currentUser?.getIdToken(),
+        });
+
+        const productWithStripe = {
+            ...productWithTimestamp,
+            stripeProductId: stripeSync?.stripeProductId || "",
+            stripePriceId: stripeSync?.stripePriceId || "",
+            stripeCurrency: stripeSync?.currency || "usd",
+            stripeUnitAmount: stripeSync?.unitAmount || 0,
+        };
+
+        await setDoc(newProductRef, productWithStripe);
+
+        await ensureStripePriceForProduct({
+            productId: newProductRef.id,
+            productData: productWithStripe,
+            authToken: await auth.currentUser?.getIdToken(),
+        });
 
         return newProductRef.id;
     } catch (error) {
