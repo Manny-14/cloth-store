@@ -200,18 +200,30 @@ const PlaceOrder = () => {
       }
 
       try {
+        const missingStripePriceNames = [];
         const lineItemsWithPrice = orderItems
           .map((item) => {
             const product = activeLineItems.find((p) => p.productId === item.productId && p.size === item.size)?.productRef;
             const priceId = product?.stripePriceId;
-            return priceId
-              ? { priceId, quantity: item.quantity, metadata: { size: item.size, firebaseProductId: item.productId } }
-              : null;
+            if (!priceId) {
+              missingStripePriceNames.push(item.productName || "Unnamed product");
+              return null;
+            }
+            return {
+              priceId,
+              quantity: item.quantity,
+              metadata: {
+                size: item.size,
+                firebaseProductId: item.productId,
+              },
+            };
           })
           .filter(Boolean);
 
         if (lineItemsWithPrice.length !== orderItems.length) {
-          toast.error("Some products are missing Stripe prices. Please contact support.");
+          const uniqueNames = [...new Set(missingStripePriceNames)];
+          console.error("Missing Stripe prices for products:", uniqueNames);
+          toast.error("Unable to place order. Please try again later.");
           setIsSubmitting(false);
           return;
         }
@@ -219,7 +231,14 @@ const PlaceOrder = () => {
         const origin = window.location.origin;
         const basePath = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
         const customerName = `${formData.firstName} ${formData.lastName}`.trim();
-        const authToken = await currentUser.getIdToken();
+        const authToken = typeof currentUser?.getIdToken === "function"
+          ? await currentUser.getIdToken()
+          : "";
+
+        if (!authToken) {
+          throw new Error("Unable to authenticate checkout. Please sign in again.");
+        }
+
         const { url } = await createStripeCheckoutSession({
           lineItems: lineItemsWithPrice,
           customerEmail: currentUser.email || formData.email,

@@ -26,13 +26,20 @@ export function AuthProvider ({ children }) {
                 try {
                     const userRole = await getUserRole(user.uid);
                     if (isMounted) {
-                        setCurrentUser({
-                            ...user,
-                            role : userRole
+                        const normalizedRole = String(userRole || "GENERAL").toUpperCase();
+                        Object.defineProperty(user, "role", {
+                            value: normalizedRole,
+                            writable: true,
+                            configurable: true,
+                            enumerable: true,
                         });
+                        setCurrentUser(user);
                     }
                 } catch (error) {
                     console.error("Error fetching user role:", error);
+                    if (isMounted) {
+                        setCurrentUser(user);
+                    }
                 } finally {
                     if (isMounted) setIsResolvingRole(false);
                 }
