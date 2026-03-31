@@ -153,4 +153,20 @@ describe("server routes", () => {
     expect(response.status).toBe(503);
     expect(body.error).toContain("not configured");
   });
+
+  it("POST /admin/stripe/ensure-product-price returns 503 when admin API is not configured", async () => {
+    const response = await fetch(`${baseUrl}/admin/stripe/ensure-product-price`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        productId: "product_1",
+      }),
+    });
+
+    const body = await response.json();
+    expect(response.status).toBe(503);
+    expect(body.error).toContain("not configured");
+  });
 });

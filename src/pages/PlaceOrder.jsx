@@ -7,6 +7,7 @@ import { useAuth } from "../context/authContext";
 import { toast } from "react-toastify";
 import { useLocation, useNavigate } from "react-router-dom";
 import { createStripeCheckoutSession } from "../helper/stripe";
+import { resolveCheckoutAuthToken } from "../helper/checkoutAuth";
 import { calculateShippingFee, estimateCartWeightKg } from "../helper/shipping";
 
 const emptyForm = {
@@ -231,13 +232,7 @@ const PlaceOrder = () => {
         const origin = window.location.origin;
         const basePath = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
         const customerName = `${formData.firstName} ${formData.lastName}`.trim();
-        const authToken = typeof currentUser?.getIdToken === "function"
-          ? await currentUser.getIdToken()
-          : "";
-
-        if (!authToken) {
-          throw new Error("Unable to authenticate checkout. Please sign in again.");
-        }
+        const authToken = await resolveCheckoutAuthToken(currentUser);
 
         const { url } = await createStripeCheckoutSession({
           lineItems: lineItemsWithPrice,
