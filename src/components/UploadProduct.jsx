@@ -5,7 +5,7 @@ import { ShopContext } from "../context/ShopContext";
 import { toast } from "react-toastify";
 import uploadImage from "../helper/cloudinary";
 import { uploadProduct } from "../../firebase/products/uploadProduct";
-import { productCategory, productType } from "../helper/dropdowns";
+import { productFilterOptions } from "../helper/dropdowns";
 
 const UploadProduct = ({ closeUploadProduct }) => {
   const { theme, refreshProducts } = React.useContext(ShopContext);
@@ -20,8 +20,7 @@ const UploadProduct = ({ closeUploadProduct }) => {
     largeQuantity: "",
     xlQuantity: "",
     description: "",
-    category: "", // men, women, kids, etc.
-    type: "", // t-shirt, jeans, etc.
+    type: "",
     images: [],
   });
 
@@ -82,6 +81,8 @@ const UploadProduct = ({ closeUploadProduct }) => {
 
     const payload = {
       ...productData,
+      category: productData.type,
+      type: productData.type,
       costPrice: toNumber(productData.costPrice),
       sellingPrice: toNumber(productData.sellingPrice),
       hasSizes: Boolean(productData.hasSizes),
@@ -123,7 +124,6 @@ const UploadProduct = ({ closeUploadProduct }) => {
         largeQuantity: "",
         xlQuantity: "",
         description: "",
-        category: "",
         type: "",
         images: [],
       });
@@ -321,32 +321,9 @@ const UploadProduct = ({ closeUploadProduct }) => {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-x-4">
+          <div className="grid grid-cols-1 gap-x-4">
             <div className="flex flex-col">
-              <label htmlFor="category">Category</label>
-              <select
-                id="category"
-                name="category"
-                value={productData.category}
-                onChange={handleOnChange}
-                className={`${
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded p-2`}
-                required
-              >
-                <option value="" disabled>
-                  Select Category
-                </option>
-                {productCategory.map((category) => (
-                  <option key={category.id} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex flex-col">
-              <label htmlFor="type">Type</label>
+              <label htmlFor="type">Product Type</label>
               <select
                 id="type"
                 name="type"
@@ -358,11 +335,11 @@ const UploadProduct = ({ closeUploadProduct }) => {
                 required
               >
                 <option value="" disabled>
-                  Select Type
+                  Select Product Type
                 </option>
-                {productType.map((type) => (
-                  <option key={type.id} value={type.value}>
-                    {type.label}
+                {productFilterOptions.map((entry) => (
+                  <option key={entry.id} value={entry.value}>
+                    {entry.label}
                   </option>
                 ))}
               </select>

@@ -3,7 +3,7 @@ import { assets } from "../assets/assets";
 import Title from "../components/Title";
 import ProductItem from "../components/ProductItem";
 import { ShopContext } from "../context/ShopContext";
-import { productCategory, productType } from "../helper/dropdowns";
+import { productFilterOptions } from "../helper/dropdowns";
 
 const Collection = () => {
   const {
@@ -18,22 +18,12 @@ const Collection = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [filterProducts, setFilterProducts] = useState([]);
-  const [category, setCategory] = useState([]);
-  const [type, setType] = useState([]);
+  const [productTypes, setProductTypes] = useState([]);
   const [sortType, setSortType] = useState("relevant");
-  
-  const toggleCategory = (e) => {
-    const value = e.target.value;
-    setCategory((prev) =>
-      prev.includes(value)
-        ? prev.filter((item) => item !== value)
-        : [...prev, value]
-    );
-  };
 
   const toggleType = (e) => {
     const value = e.target.value;
-    setType((prev) =>
+    setProductTypes((prev) =>
       prev.includes(value)
         ? prev.filter((item) => item !== value)
         : [...prev, value]
@@ -52,11 +42,10 @@ const Collection = () => {
         (item.productName || "").toLowerCase().includes(search.toLowerCase())
       );
     }
-    if (category.length > 0) {
-      filtered = filtered.filter((item) => category.includes(item.category));
-    }
-    if (type.length > 0) {
-      filtered = filtered.filter((item) => type.includes(item.type));
+    if (productTypes.length > 0) {
+      filtered = filtered.filter((item) =>
+        productTypes.includes(item.type || item.category)
+      );
     }
     // Sorting
     if (sortType === "low-high") {
@@ -65,7 +54,7 @@ const Collection = () => {
       filtered = filtered.sort((a, b) => Number(b.sellingPrice) - Number(a.sellingPrice));
     }
     setFilterProducts(filtered);
-  }, [availableProducts, category, type, search, showSearch, sortType]);
+  }, [availableProducts, productTypes, search, showSearch, sortType]);
 
   return (
     <div className="flex flex-col sm:flex-row gap-1 sm:gap-10 pt-10 border-t">
@@ -83,37 +72,14 @@ const Collection = () => {
             alt="dropdown icon"
           />
         </p>
-        {/* Category Filter */}
         <div
           className={`border border-gray-300 pl-5 py-3 mt-6 ${
             showFilter ? "" : "hidden"
           } sm:block`}
         >
-          <p className="mb-3 text-sm font-medium">CATEGORIES</p>
+          <p className="mb-3 text-sm font-medium">PRODUCT TYPE</p>
           <div className={`flex flex-col gap-2 text-sm font-light ${theme === "light" ? "text-gray-700" : "text-white"}`}>
-            {productCategory.map((entry) => (
-              <p className="flex gap-2" key={entry.value}>
-                <input
-                  type="checkbox"
-                  className="w-3"
-                  value={entry.value}
-                  onChange={toggleCategory}
-                />
-                {entry.label}
-              </p>
-            ))}
-          </div>
-        </div>
-
-        {/* Type Filter */}
-        <div
-          className={`border border-gray-300 pl-5 py-3 my-5 ${
-            showFilter ? "" : "hidden"
-          } sm:block`}
-        >
-          <p className="mb-3 text-sm font-medium">TYPE</p>
-          <div className={`flex flex-col gap-2 text-sm font-light ${theme === "light" ? "text-gray-700" : "text-white"}`}>
-            {productType.map((entry) => (
+            {productFilterOptions.map((entry) => (
               <p className="flex gap-2" key={entry.value}>
                 <input
                   type="checkbox"

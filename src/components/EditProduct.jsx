@@ -5,7 +5,7 @@ import { ShopContext } from "../context/ShopContext";
 import { toast } from "react-toastify";
 import uploadImage from "../helper/cloudinary";
 import { editProduct } from "../../firebase/products/editProduct";
-import { productCategory, productType } from "../helper/dropdowns";
+import { productFilterOptions } from "../helper/dropdowns";
 import { hasSizeVariants } from "../helper/inventory";
 
 const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
@@ -22,8 +22,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
     largeQuantity: product.largeQuantity || "",
     xlQuantity: product.xlQuantity || "",
     description: product.description || "",
-    category: product.category || "",
-    type: product.type || "",
+    type: product.type || product.category || "",
     images: product.images ? [...product.images] : [],
   });
 
@@ -83,6 +82,8 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
     const hasSizes = Boolean(productData.hasSizes);
     const payload = {
       ...productData,
+      category: productData.type,
+      type: productData.type,
       costPrice: toNumber(productData.costPrice),
       sellingPrice: toNumber(productData.sellingPrice),
       hasSizes,
@@ -270,29 +271,9 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
               />
             </div>
           )}
-          <div className="grid grid-cols-2 gap-x-4">
+          <div className="grid grid-cols-1 gap-x-4">
             <div className="flex flex-col">
-              <label htmlFor="category">Category</label>
-              <select
-                id="category"
-                name="category"
-                value={productData.category}
-                onChange={handleOnChange}
-                className={`${inputBg} border-dashed border-2 rounded p-2`}
-                required
-              >
-                <option value="" disabled>
-                  Select Category
-                </option>
-                {productCategory.map((category) => (
-                  <option key={category.id} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col">
-              <label htmlFor="type">Type</label>
+              <label htmlFor="type">Product Type</label>
               <select
                 id="type"
                 name="type"
@@ -302,11 +283,11 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
                 required
               >
                 <option value="" disabled>
-                  Select Type
+                  Select Product Type
                 </option>
-                {productType.map((type) => (
-                  <option key={type.id} value={type.value}>
-                    {type.label}
+                {productFilterOptions.map((entry) => (
+                  <option key={entry.id} value={entry.value}>
+                    {entry.label}
                   </option>
                 ))}
               </select>
