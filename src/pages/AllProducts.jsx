@@ -35,14 +35,14 @@ const AllProducts = () => {
     }
 
     const confirmed = window.confirm(
-      `Delete "${product.productName || product.name}"? This cannot be undone.`
+      `Archive "${product.productName || product.name}"? Customers won't be able to purchase it.`
     );
 
     if (!confirmed) return;
 
     try {
       await deleteProduct(productId);
-      toast.success("Product deleted");
+      toast.success("Product archived");
       refreshProducts();
     } catch (error) {
       console.error(error);

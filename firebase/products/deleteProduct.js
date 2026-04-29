@@ -1,4 +1,4 @@
-import { deleteDoc, doc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
 export const deleteProduct = async (productId) => {
@@ -8,7 +8,10 @@ export const deleteProduct = async (productId) => {
 
   try {
     const productRef = doc(db, "products", productId);
-    await deleteDoc(productRef);
+    await updateDoc(productRef, {
+      status: "inactive",
+      archivedAt: new Date().toISOString(),
+    });
     return true;
   } catch (error) {
     console.error("Error deleting product:", error);

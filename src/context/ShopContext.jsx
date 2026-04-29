@@ -95,6 +95,11 @@ const ShopContextProvider = (props) => {
     [products]
   );
 
+  const isInactiveProduct = React.useCallback((product) => {
+    if (!product) return true;
+    return String(product.status || "").toLowerCase() === "inactive";
+  }, []);
+
   const getSizeQuantity = React.useCallback(
     (product, size) => {
       if (!product) return 0;
@@ -516,6 +521,27 @@ const ShopContextProvider = (props) => {
   React.useEffect(() => {
     refreshProducts();
   }, [refreshProducts]);
+
+  React.useEffect(() => {
+    if (productsLoading) return;
+    if (!products.length && !Object.keys(cartItems).length) return;
+
+    const removedIds = [];
+    const nextCart = structuredClone(cartItems);
+
+    Object.keys(nextCart).forEach((productId) => {
+      const product = findProductById(productId);
+      if (!product || isInactiveProduct(product)) {
+        removedIds.push(productId);
+        delete nextCart[productId];
+      }
+    });
+
+    if (removedIds.length > 0) {
+      commitCartData(nextCart);
+      toast.warn("Some items were removed because they are no longer available.");
+    }
+  }, [cartItems, commitCartData, findProductById, isInactiveProduct, products, productsLoading]);
 
   const isSoldOut = React.useCallback(
     (product) => {
