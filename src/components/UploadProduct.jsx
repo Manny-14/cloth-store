@@ -160,7 +160,7 @@ const UploadProduct = ({ closeUploadProduct }) => {
           <input
             type="text"
             id="productName"
-            placeholder="enter product name"
+            placeholder="enter product name (include size info if needed, e.g. 'Embroidered Towel Set 27x54')"
             name="productName"
             value={productData.productName}
             className={`${
