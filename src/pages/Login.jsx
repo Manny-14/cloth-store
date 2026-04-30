@@ -8,6 +8,7 @@ const Login = () => {
       email: '',
       password: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const onChangeHandler = (e) => {
       const {name, value} = e.target;
@@ -51,15 +52,24 @@ const Login = () => {
           required
           onChange={onChangeHandler}
         />
-        <input
-          name='password'
-          value={user.password}
-          type="password"
-          className="w-full px-3 py-2 border border-gray-800 text-black"
-          placeholder="Password"
-          required
-          onChange={onChangeHandler}
-        />
+        <div className="w-full relative">
+          <input
+            name='password'
+            value={user.password}
+            type={showPassword ? "text" : "password"}
+            className="w-full px-3 py-2 border border-gray-800 text-black pr-12"
+            placeholder="Password"
+            required
+            onChange={onChangeHandler}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600"
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </div>
         <div className="w-full flex justify-between text-sm mt-[-10px]">
           <p className="cursor-pointer">Forgot your password?</p>
             <p
