@@ -30,16 +30,6 @@ describe("shipping helpers", () => {
     ).toBe(0);
   });
 
-  it("applies doorstep discount after free-shipping threshold", () => {
-    const fee = calculateShippingFee({
-      subtotal: 180,
-      deliveryMethod: "doorstep_delivery",
-      estimatedWeightKg: 1,
-    });
-
-    expect(fee).toBe(8.99);
-  });
-
   it("adds weight surcharge for heavy carts", () => {
     const midWeightFee = calculateShippingFee({
       subtotal: 70,

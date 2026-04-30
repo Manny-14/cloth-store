@@ -72,17 +72,11 @@ const calculateShippingFee = ({
 }) => {
   const FREE_STANDARD_THRESHOLD = 75;
   const STANDARD_BASE = 7.99;
-  const DOORSTEP_BASE = 12.99;
 
   const normalizedSubtotal = toNumber(subtotal);
   const normalizedWeight = toNumber(estimatedWeightKg);
 
   const weightSurcharge = normalizedWeight > 8 ? 4 : normalizedWeight > 4 ? 2 : 0;
-
-  if (deliveryMethod === "doorstep_delivery") {
-    const discountedDoorstep = normalizedSubtotal >= FREE_STANDARD_THRESHOLD ? 8.99 : DOORSTEP_BASE;
-    return Number((discountedDoorstep + weightSurcharge).toFixed(2));
-  }
 
   if (normalizedSubtotal >= FREE_STANDARD_THRESHOLD) {
     return Number((0 + weightSurcharge).toFixed(2));

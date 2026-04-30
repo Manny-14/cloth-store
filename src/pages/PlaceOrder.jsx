@@ -48,7 +48,7 @@ const PlaceOrder = () => {
   } = React.useContext(ShopContext);
   const { currentUser } = useAuth();
 
-  const [deliveryMethod, setDeliveryMethod] = React.useState("standard_shipping");
+  const deliveryMethod = "standard_shipping";
   const [formData, setFormData] = React.useState(() => {
     const { firstName, lastName } = splitDisplayName(currentUser?.displayName);
     return {
@@ -374,33 +374,12 @@ const PlaceOrder = () => {
           <div className="flex flex-col gap-2 mt-2">
             <label className="text-sm font-medium">Delivery Option</label>
             <div className="flex gap-3 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setDeliveryMethod("standard_shipping")}
-                className={`px-3 py-2 rounded border text-sm ${
-                  deliveryMethod === "standard_shipping"
-                    ? "border-green-500 bg-green-50 dark:bg-green-900/20"
-                    : "border-slate-300 dark:border-slate-700"
-                }`}
-              >
+              <span className="px-3 py-2 rounded border text-sm border-green-500 bg-green-50 dark:bg-green-900/20">
                 Standard Shipping
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeliveryMethod("doorstep_delivery")}
-                className={`px-3 py-2 rounded border text-sm ${
-                  deliveryMethod === "doorstep_delivery"
-                    ? "border-green-500 bg-green-50 dark:bg-green-900/20"
-                    : "border-slate-300 dark:border-slate-700"
-                }`}
-              >
-                Doorstep Delivery
-              </button>
+              </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {deliveryMethod === "doorstep_delivery"
-                ? "Priority doorstep handoff by local delivery partner."
-                : "Standard shipping to your provided address."}
+              Standard shipping to your provided address.
             </p>
             {isBuyNowFlow && (
               <p className="text-xs text-blue-600 dark:text-blue-400">
