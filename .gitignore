@@ -2,8 +2,15 @@ node_modules
 .env
 dist/
 
+# macOS Finder metadata
+.DS_Store
+**/.DS_Store
+
 # Firebase service-account keys (never commit)
 serviceAccount*.json
 
 # Admin/utility scripts (local-only tooling)
 server/scripts/
+
+# sample products
+sample_products_images/
