@@ -39,7 +39,7 @@ export const supportTemplates = {
         "What I was trying to do:",
       ].join("\n"),
     }),
-  orderFinalization: () =>
+  orderFinalization: ({ orderId = "", sessionId = "" } = {}) =>
     createSupportMailto({
       subject: "Dress-It-Up order finalization help",
       body: [
@@ -47,7 +47,8 @@ export const supportTemplates = {
         "",
         "My payment may have gone through, but the order did not finish correctly.",
         "",
-        "Order number, if shown:",
+        `Order number, if shown: ${orderId}`,
+        `Stripe session ID, if shown: ${sessionId}`,
         "Stripe/payment email:",
         "Approximate time of payment:",
         "",

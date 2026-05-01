@@ -5,6 +5,8 @@ import { useAuth } from "../context/authContext";
 import { getOrdersByUser } from "../../firebase/orders/getOrdersByUser";
 import { assets } from "../assets/assets";
 import { DEFAULT_ORDER_STATUS, formatOrderStatusLabel } from "../helper/orderStatus";
+import { NON_SIZED_KEY } from "../helper/inventory";
+import { supportTemplates } from "../helper/support";
 
 const toNumber = (value) => {
   const parsed = Number(value);
@@ -27,7 +29,7 @@ const formatOrderDate = (timestamp) => {
 };
 
 const Orders = () => {
-  const { currency, theme } = React.useContext(ShopContext);
+  const { currency, theme, navigate } = React.useContext(ShopContext);
   const { currentUser, userLoggedIn } = useAuth();
   const [orders, setOrders] = React.useState([]);
   const [loading, setLoading] = React.useState(false);
@@ -66,6 +68,7 @@ const Orders = () => {
   const cardBg = theme === "dark" ? "bg-gray-900" : "bg-white";
   const textColor = theme === "dark" ? "text-gray-100" : "text-gray-700";
   const mutedText = theme === "dark" ? "text-gray-400" : "text-gray-500";
+  const supportHref = supportTemplates.general();
 
   if (!userLoggedIn) {
     return (
@@ -90,16 +93,32 @@ const Orders = () => {
         )}
 
         {!loading && error && (
-          <p className="text-center mt-10 text-sm text-red-500">{error}</p>
+          <div className="mt-10 flex flex-col items-center gap-3 text-center">
+            <p className="text-sm text-red-500">{error}</p>
+            <a href={supportHref} className="border px-4 py-2 rounded text-sm">
+              Message Vendor
+            </a>
+          </div>
         )}
 
         {!loading && !error && orders.length === 0 && (
-          <p className="text-center mt-10 text-sm">You have not placed any orders yet.</p>
+          <div className="mt-10 flex flex-col items-center gap-3 text-center">
+            <p className="text-sm">You have not placed any orders yet.</p>
+            <button
+              type="button"
+              onClick={() => navigate("/collection")}
+              className="bg-black text-white dark:bg-white dark:text-black px-4 py-2 rounded text-sm"
+            >
+              Browse Collection
+            </button>
+          </div>
         )}
 
         <div className="flex flex-col gap-4 mt-8">
           {orders.map((order) => {
             const orderTotal = toNumber(order.total ?? order.subtotal ?? 0);
+            const subtotal = toNumber(order.subtotal);
+            const deliveryFee = toNumber(order.deliveryFee);
             const statusLabel = order.delivery?.status || order.status || DEFAULT_ORDER_STATUS;
             const trackingUrl = order.delivery?.trackingUrl || "";
             const trackingNumber = order.delivery?.trackingNumber || "";
@@ -107,10 +126,10 @@ const Orders = () => {
             return (
               <div
                 key={order.id}
-                className={`py-4 border rounded-lg flex flex-col gap-4 px-4 ${borderColor} ${cardBg} transition-colors`}
+                className={`py-4 border rounded-lg flex flex-col gap-4 px-4 min-w-0 ${borderColor} ${cardBg} transition-colors`}
               >
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between text-sm">
-                  <div className={`${textColor}`}>
+                  <div className={`min-w-0 ${textColor}`}>
                     <p className="font-semibold text-base">Order #{order.id.slice(-6)}</p>
                     <p className={`${mutedText} text-xs mt-1`}>
                       Placed on {formatOrderDate(order.createdAt)}
@@ -136,17 +155,22 @@ const Orders = () => {
                       <img
                         src={item.image || assets.hero_img}
                         alt={item.productName}
-                        className="w-16 h-16 object-cover rounded"
+                        className="w-16 h-16 object-cover rounded shrink-0"
                       />
-                      <div className="flex-1 text-sm">
-                        <p className={`font-medium ${textColor}`}>{item.productName}</p>
+                      <div className="flex-1 min-w-0 text-sm">
+                        <p className={`font-medium break-words ${textColor}`}>{item.productName}</p>
                         <div className={`flex flex-wrap gap-4 ${mutedText}`}>
                           <span>
                             Qty: <strong>{item.quantity}</strong>
                           </span>
-                          <span>
-                            Size: <strong>{item.size}</strong>
-                          </span>
+                          {item.size && (
+                            <span>
+                              Size:{" "}
+                              <strong>
+                                {item.size === NON_SIZED_KEY ? "One size" : item.size}
+                              </strong>
+                            </span>
+                          )}
                           <span>
                             Price: {currency}
                             {(toNumber(item.pricePerUnit || item.price || 0) * toNumber(item.quantity)).toFixed(2)}
@@ -162,8 +186,15 @@ const Orders = () => {
                     Delivery method: <strong>{deliveryMethod.replace(/_/g, " ")}</strong>
                   </p>
                   {trackingNumber && (
-                    <p>
+                    <p className="break-all">
                       Tracking: <strong>{trackingNumber}</strong>
+                    </p>
+                  )}
+                  {(subtotal > 0 || deliveryFee > 0) && (
+                    <p>
+                      Items: <strong>{currency}{subtotal.toFixed(2)}</strong>
+                      {" · "}
+                      Shipping: <strong>{currency}{deliveryFee.toFixed(2)}</strong>
                     </p>
                   )}
                 </div>

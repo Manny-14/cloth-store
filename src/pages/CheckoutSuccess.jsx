@@ -23,11 +23,15 @@ const getSessionId = () => {
 const CheckoutSuccess = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id") || getSessionId();
-  const supportHref = supportTemplates.orderFinalization();
   const navigate = useNavigate();
   const { clearCart, refreshProducts } = React.useContext(ShopContext);
   const [status, setStatus] = React.useState("pending");
+  const [orderId, setOrderId] = React.useState("");
   const finalizedRef = React.useRef(false);
+  const supportHref = React.useMemo(
+    () => supportTemplates.orderFinalization({ orderId, sessionId }),
+    [orderId, sessionId]
+  );
 
   React.useEffect(() => {
     // Guard: no session id
@@ -48,6 +52,7 @@ const CheckoutSuccess = () => {
         }
 
         const finalizeResult = await finalizeCheckoutSession(session.id);
+        setOrderId(finalizeResult.orderId || "");
         if (finalizeResult.checkoutMode !== "buy_now") {
           clearCart();
         }
@@ -70,13 +75,14 @@ const CheckoutSuccess = () => {
       } catch (err) {
         console.error("Finalize order failed", err);
         finalizedRef.current = false; // allow manual retry
+        setOrderId("");
         createAdminLog({
           event: "checkout.finalize_failed",
           severity: "critical",
           source: "client",
           message: "Checkout finalization failed after payment.",
         });
-        toast.error(err?.message || "Unable to finalize order");
+        toast.error(err?.message || "Unable to finalize order. Please check Orders or message vendor.");
         setStatus("error");
       }
     };
@@ -95,8 +101,13 @@ const CheckoutSuccess = () => {
       <p className="max-w-xl text-slate-600 dark:text-slate-300">
         {isLoading && "Finalizing your order..."}
         {status === "done" && "Your payment was confirmed. We’re preparing your order."}
-        {status === "error" && "We couldn't finalize the order. Please check your orders or try again."}
+        {status === "error" && "We couldn't finalize the order. Please check your orders, refresh this page, or message vendor."}
       </p>
+      {status === "done" && orderId && (
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Order #{String(orderId).slice(-6)}
+        </p>
+      )}
       <div className="flex flex-wrap justify-center gap-3">
         <Link
           to="/orders"
