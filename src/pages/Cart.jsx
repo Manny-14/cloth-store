@@ -222,14 +222,17 @@ const Cart = () => {
                 >
                   PROCEED TO CHECKOUT
                 </button>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Having trouble checking out? Use Contact to message vendor.
+                </p>
               </div>
             </div>
           </div>
         </div>
       ) : (
         // Centered Message when Cart is Empty
-        <div className="flex items-center justify-center h-[50vh] text-xl">
-          <p>Add items to the cart</p>
+        <div className="flex items-center justify-center h-[50vh] text-xl text-center px-4">
+          <p>Your cart is empty. Add an item from the collection to get started.</p>
         </div>
       )}
     </div>

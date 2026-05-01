@@ -184,7 +184,7 @@ const ShopContextProvider = (props) => {
     const product = findProductById(itemId);
 
     if (!product) {
-      toast.error("Product unavailable. Please refresh and try again.");
+      toast.error("This product is no longer available. Refresh the page or choose another item.");
       return;
     }
 
@@ -193,12 +193,12 @@ const ShopContextProvider = (props) => {
       : oneSizeKey;
 
     if (!normalizedSize) {
-      toast.error("Please select the product size");
+      toast.error("Please select a size before adding this item to your cart.");
       return;
     }
 
     if (isSoldOut(product)) {
-      toast.error("This product is sold out.");
+      toast.error("This product is sold out. Please choose another item.");
       return;
     }
 
@@ -206,9 +206,9 @@ const ShopContextProvider = (props) => {
 
     if (sizeStock <= 0) {
       if (productHasSizes(product)) {
-        toast.error(`Size ${normalizedSize} is sold out.`);
+        toast.error(`Size ${normalizedSize} is sold out. Please choose another size.`);
       } else {
-        toast.error("This product is sold out.");
+        toast.error("This product is sold out. Please choose another item.");
       }
       return;
     }
@@ -217,8 +217,8 @@ const ShopContextProvider = (props) => {
 
     if (currentQuantity >= sizeStock) {
       toast.info(productHasSizes(product)
-        ? `You've reached the limit for size ${normalizedSize}. Available stock: ${sizeStock}.`
-        : `You've reached the available stock (${sizeStock}).`);
+        ? `You already have all available stock for size ${normalizedSize} in your cart (${sizeStock}).`
+        : `You already have all available stock for this item in your cart (${sizeStock}).`);
       return;
     }
 
@@ -255,7 +255,7 @@ const ShopContextProvider = (props) => {
       const nextCart = structuredClone(cartItems);
       delete nextCart[itemId];
       commitCartData(nextCart);
-      toast.warn("Product no longer available and was removed from your cart.");
+      toast.warn("An unavailable product was removed from your cart.");
       return;
     }
 
@@ -273,8 +273,8 @@ const ShopContextProvider = (props) => {
       commitCartData(nextCart);
       toast.error(
         productHasSizes(product)
-          ? `Size ${normalizedSize} is sold out and was removed from your cart.`
-          : "This item is sold out and was removed from your cart."
+          ? `Size ${normalizedSize} is sold out, so it was removed from your cart.`
+          : "This item is sold out, so it was removed from your cart."
       );
       return;
     }
@@ -297,8 +297,8 @@ const ShopContextProvider = (props) => {
     if (requestedQuantity > sizeStock) {
       toast.info(
         productHasSizes(product)
-          ? `Only ${sizeStock} units available for size ${normalizedSize}.`
-          : `Only ${sizeStock} units available.`
+          ? `Only ${sizeStock} available for size ${normalizedSize}. Your cart was updated to that amount.`
+          : `Only ${sizeStock} available. Your cart was updated to that amount.`
       );
     }
   };
@@ -308,7 +308,7 @@ const ShopContextProvider = (props) => {
     const normalizedNew = normalizeSizeLabel(newSize);
 
     if (!normalizedOld || !normalizedNew) {
-      toast.error("Select a valid size");
+      toast.error("Please select a valid size.");
       return;
     }
 
@@ -322,7 +322,7 @@ const ShopContextProvider = (props) => {
       const nextCart = structuredClone(cartItems);
       delete nextCart[itemId];
       commitCartData(nextCart);
-      toast.warn("Product no longer available and was removed from your cart.");
+      toast.warn("An unavailable product was removed from your cart.");
       return;
     }
 
@@ -333,13 +333,13 @@ const ShopContextProvider = (props) => {
     const newSizeStock = getSizeQuantity(product, normalizedNew);
 
     if (newSizeStock <= 0) {
-      toast.error(`Size ${normalizedNew} is sold out.`);
+      toast.error(`Size ${normalizedNew} is sold out. Please choose another size.`);
       return;
     }
 
     const currentQuantity = cartItems[itemId]?.[normalizedOld] || 0;
     if (currentQuantity <= 0) {
-      toast.warn("No quantity to move for this size.");
+      toast.warn("There is no quantity to move for this size.");
       return;
     }
 
@@ -376,7 +376,7 @@ const ShopContextProvider = (props) => {
 
     if (transferQuantity < currentQuantity) {
       toast.info(
-        `Only ${transferQuantity} items moved due to stock limits for size ${normalizedNew}.`
+        `Only ${transferQuantity} moved to size ${normalizedNew} because that is all the stock available.`
       );
     } else {
       toast.success(`Updated size to ${normalizedNew}.`);

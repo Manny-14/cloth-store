@@ -38,6 +38,8 @@ const toNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const contactVendorMessage = "Please try again or message vendor from the Contact page.";
+
 const PlaceOrder = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -157,7 +159,7 @@ const PlaceOrder = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (isCartEmpty) {
-      toast.error("Your cart is empty.");
+      toast.error("Your cart is empty. Add an item before checkout.");
       return;
     }
 
@@ -176,15 +178,17 @@ const PlaceOrder = () => {
         const product = lineItem.productRef;
         if (!product) {
           validationErrors.push(
-            `${lineItem.productName} is no longer available. Please remove it from your cart.`
+            `${lineItem.productName} is no longer available. Please remove it from your cart before checkout.`
           );
           return;
         }
 
         const availableStock = getSizeQuantity(product, lineItem.size);
         if (lineItem.quantity > availableStock) {
+          const sizeLabel =
+            lineItem.size && lineItem.size !== "ONE_SIZE" ? ` (${lineItem.size})` : "";
           validationErrors.push(
-            `${lineItem.productName} (${lineItem.size}) has only ${availableStock} left.`
+            `${lineItem.productName}${sizeLabel} has only ${availableStock} available. Update the cart quantity before checkout.`
           );
           return;
         }
@@ -239,7 +243,7 @@ const PlaceOrder = () => {
               checkoutMode: isBuyNowFlow ? "buy_now" : "cart",
             },
           });
-          toast.error("Unable to place order. Please try again later.");
+          toast.error(`Unable to place order right now. ${contactVendorMessage}`);
           setIsSubmitting(false);
           return;
         }
@@ -275,7 +279,7 @@ const PlaceOrder = () => {
           return;
         }
 
-        toast.error("Unable to start Stripe checkout. Please try again.");
+        toast.error(`Unable to start Stripe checkout. ${contactVendorMessage}`);
       } catch (err) {
         console.error("Stripe checkout failed", err);
         createAdminLog({
@@ -287,7 +291,7 @@ const PlaceOrder = () => {
             checkoutMode: isBuyNowFlow ? "buy_now" : "cart",
           },
         });
-        toast.error(err?.message || "Unable to start Stripe checkout. Please try again.");
+        toast.error(err?.message || `Unable to start Stripe checkout. ${contactVendorMessage}`);
       } finally {
         setIsSubmitting(false);
       }
@@ -302,7 +306,7 @@ const PlaceOrder = () => {
           checkoutMode: isBuyNowFlow ? "buy_now" : "cart",
         },
       });
-      toast.error("Failed to place order. Please try again.");
+      toast.error(`Failed to place order. ${contactVendorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
