@@ -344,7 +344,7 @@ const Product = () => {
           <hr className="mt-8 sm:w-4/5" />
           <div className="text-sm mt-5 flex flex-col gap-1">
             <p>100% Original Product.</p>
-            <p>Cash on delivery is available on this product.</p>
+            <p>Secure checkout is available through Stripe.</p>
             <p>Easy return and exchange policy within 7 days.</p>
           </div>
         </div>

@@ -22,6 +22,10 @@ const getSessionId = () => {
 const CheckoutSuccess = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id") || getSessionId();
+  const supportEmail = "dressitup1000@gmail.com";
+  const supportHref = `mailto:${supportEmail}?subject=${encodeURIComponent(
+    "Dress-It-Up order finalization help"
+  )}`;
   const navigate = useNavigate();
   const { clearCart, refreshProducts } = React.useContext(ShopContext);
   const [status, setStatus] = React.useState("pending");
@@ -95,7 +99,7 @@ const CheckoutSuccess = () => {
         {status === "done" && "Your payment was confirmed. We’re preparing your order."}
         {status === "error" && "We couldn't finalize the order. Please check your orders or try again."}
       </p>
-      <div className="flex gap-3">
+      <div className="flex flex-wrap justify-center gap-3">
         <Link
           to="/orders"
           className="bg-black text-white dark:bg-white dark:text-black px-4 py-2 rounded"
@@ -108,6 +112,14 @@ const CheckoutSuccess = () => {
         >
           Continue Shopping
         </button>
+        {status === "error" && (
+          <a
+            href={supportHref}
+            className="border px-4 py-2 rounded"
+          >
+            Message Vendor
+          </a>
+        )}
       </div>
     </div>
   );
