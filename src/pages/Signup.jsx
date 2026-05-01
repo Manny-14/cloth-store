@@ -2,10 +2,10 @@ import React from 'react'
 import { useState } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import { doCreateUserWithEmailAndPassword } from '../../firebase/auth';
-import { useAuth } from '../context/authContext';
 import { toast } from 'react-toastify';
 const Signup = () => {
 
+  const supportEmail = "dressitup1000@gmail.com";
     const [user, setUser] = useState({
         name: '',
         email: '',
@@ -37,13 +37,13 @@ const Signup = () => {
         e.preventDefault();
         try {
             if (user.password !== user.confirmPassword) {
-                throw new Error("Passwords do not match");
+                throw new Error("Passwords do not match. Please re-enter them.");
             }
             await doCreateUserWithEmailAndPassword(user.email, user.password, user.name);
-            toast.success("User created successfully");
+            toast.success("Account created successfully.");
             navigate('/');
         } catch (error) {
-            toast.error(error.message);
+            toast.error(error?.message || "We couldn't create your account right now. Please try again.");
         }
     };
 
@@ -112,7 +112,12 @@ const Signup = () => {
           </button>
         </div>
         <div className="w-full flex justify-between text-sm mt-[-10px]">
-            <p className="cursor-pointer">Forgot your password?</p>
+            <a
+                href={`mailto:${supportEmail}?subject=${encodeURIComponent("Dress-It-Up account help")}`}
+                className="cursor-pointer"
+            >
+                Need account help?
+            </a>
             <p
                 className="cursor-pointer"
                 onClick={(e) => {
@@ -128,7 +133,7 @@ const Signup = () => {
             theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
           } font-light px-8 py-2 mt-4 rounded`}
         >
-          'Sign Up'
+          Sign Up
         </button>
       </form>
     </div>

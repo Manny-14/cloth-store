@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { doSignInWithEmailAndPassword } from '../../firebase/auth';
 
 const Login = () => {
+  const supportEmail = "dressitup1000@gmail.com";
   const [user, setUser] = useState({
       email: '',
       password: '',
@@ -32,10 +33,10 @@ const Login = () => {
     e.preventDefault();
     try {
       await doSignInWithEmailAndPassword(user.email, user.password);
-      toast.success("User signed in successfully");
+      toast.success("Signed in successfully.");
       navigate('/');
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error?.message || "We couldn't sign you in right now. Please try again.");
     }
   };
 
@@ -77,7 +78,12 @@ const Login = () => {
           </button>
         </div>
         <div className="w-full flex justify-between text-sm mt-[-10px]">
-          <p className="cursor-pointer">Forgot your password?</p>
+          <a
+            href={`mailto:${supportEmail}?subject=${encodeURIComponent("Dress-It-Up account help")}`}
+            className="cursor-pointer"
+          >
+            Need account help?
+          </a>
             <p
               onClick={(e) => {
                 e.preventDefault();
@@ -93,7 +99,7 @@ const Login = () => {
             theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
           } font-light px-8 py-2 mt-4 rounded`}
         >
-          'Sign In'
+          Sign In
         </button>
       </form>
     </div>

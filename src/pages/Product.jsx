@@ -8,6 +8,10 @@ import { toast } from "react-toastify";
 import { NON_SIZED_KEY, hasSizeVariants } from "../helper/inventory";
 const Product = () => {
   const { productId } = useParams();
+  const supportEmail = "dressitup1000@gmail.com";
+  const supportHref = `mailto:${supportEmail}?subject=${encodeURIComponent(
+    "Dress-It-Up product help"
+  )}`;
   const {
     products,
     currency,
@@ -100,7 +104,7 @@ const Product = () => {
       } catch (err) {
         if (!isMounted) return;
         console.error(err);
-        setError("We couldn't load this product. Please try again later.");
+        setError("We couldn't load this product right now.");
         setProductData(null);
       } finally {
         if (isMounted) {
@@ -151,7 +155,7 @@ const Product = () => {
     const effectiveSize = productData.hasSizes === false ? NON_SIZED_KEY : size;
 
     if (!effectiveSize) {
-      toast.error("Please select the product size");
+      toast.error("Please select a size before checkout.");
       return;
     }
 
@@ -159,8 +163,8 @@ const Product = () => {
     if (stock <= 0) {
       toast.error(
         productData.hasSizes === false
-          ? "This product is sold out"
-          : "Selected size is sold out"
+          ? "This product is sold out. Please choose another item."
+          : "Selected size is sold out. Please choose another size."
       );
       return;
     }
@@ -186,16 +190,48 @@ const Product = () => {
 
   if (error) {
     return (
-      <div className="text-xl flex justify-center items-center h-screen text-center px-4">
-        {error}
+      <div className="min-h-[60vh] flex flex-col justify-center items-center text-center px-4 gap-4">
+        <p className="text-xl">{error}</p>
+        <p className="max-w-md text-sm text-slate-600 dark:text-slate-300">
+          Please try browsing the collection again. If you were trying to buy a
+          specific item, message vendor and include the product name.
+        </p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate("/collection")}
+            className="bg-black text-white dark:bg-white dark:text-black px-4 py-2 rounded text-sm"
+          >
+            Back to Collection
+          </button>
+          <a href={supportHref} className="border px-4 py-2 rounded text-sm">
+            Message Vendor
+          </a>
+        </div>
       </div>
     );
   }
 
   if (!productData) {
     return (
-      <div className="text-xl flex justify-center items-center h-screen text-center px-4">
-        We couldn't find this product.
+      <div className="min-h-[60vh] flex flex-col justify-center items-center text-center px-4 gap-4">
+        <p className="text-xl">We couldn't find this product.</p>
+        <p className="max-w-md text-sm text-slate-600 dark:text-slate-300">
+          It may have sold out or been removed. Browse the latest collection, or
+          message vendor if you need help finding it.
+        </p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate("/collection")}
+            className="bg-black text-white dark:bg-white dark:text-black px-4 py-2 rounded text-sm"
+          >
+            Browse Collection
+          </button>
+          <a href={supportHref} className="border px-4 py-2 rounded text-sm">
+            Message Vendor
+          </a>
+        </div>
       </div>
     );
   }
