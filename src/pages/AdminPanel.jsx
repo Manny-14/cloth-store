@@ -27,7 +27,7 @@ const AdminPanel = () => {
 
     // Derive active page from the current URL path
     const pathSegment = location.pathname.split('/').pop();
-    const activePage = ['all-users', 'all-products', 'all-orders', 'system-health'].includes(pathSegment)
+    const activePage = ['all-users', 'all-products', 'all-orders'].includes(pathSegment)
       ? pathSegment
       : 'all-users';
 
@@ -56,7 +56,6 @@ const AdminPanel = () => {
       { key: 'all-users', label: 'All Users', to: '/admin-panel/all-users' },
       { key: 'all-products', label: 'All Products', to: '/admin-panel/all-products' },
       { key: 'all-orders', label: 'All Orders', to: '/admin-panel/all-orders' },
-      { key: 'system-health', label: 'System Health', to: '/admin-panel/system-health' },
     ];
 
   return (
