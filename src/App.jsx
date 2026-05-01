@@ -19,6 +19,7 @@ import AdminPanel from "./pages/AdminPanel";
 import AllUsers from "./pages/AllUsers";
 import AllProducts from "./pages/AllProducts";
 import AllOrders from "./pages/AllOrders";
+import AdminLogs from "./pages/AdminLogs";
 import CheckoutSuccess from "./pages/CheckoutSuccess";
 import CheckoutCancel from "./pages/CheckoutCancel";
 import { ShopContext } from "./context/ShopContext";
@@ -53,6 +54,7 @@ const App = () => {
             <Route path="all-users" element={<AllUsers />} />
             <Route path="all-products" element={<AllProducts />} />
             <Route path="all-orders" element={<AllOrders />} />
+            <Route path="admin-logs" element={<AdminLogs />} />
           </Route>
           <Route path="*" element={<Navigate to="/admin-panel/all-users" replace />} />
         </Routes>

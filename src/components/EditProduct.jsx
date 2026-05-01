@@ -7,6 +7,7 @@ import uploadImage from "../helper/cloudinary";
 import { editProduct } from "../../firebase/products/editProduct";
 import { productFilterOptions } from "../helper/dropdowns";
 import { hasSizeVariants } from "../helper/inventory";
+import { createAdminLog } from "../../firebase/logs/createAdminLog";
 
 const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
   const { theme, refreshProducts } = React.useContext(ShopContext);
@@ -111,6 +112,16 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
       refreshProducts();
       closeEditProduct();
     } catch (error) {
+      createAdminLog({
+        event: "admin.product_update_failed",
+        severity: "warning",
+        source: "admin",
+        message: "Admin product update failed.",
+        context: {
+          productId: product.id || product._id,
+          productType: productData.type,
+        },
+      });
       toast.error("Failed to update Product");
     }
   };

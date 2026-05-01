@@ -7,6 +7,7 @@ import EditProduct from "../components/EditProduct";
 import { ShopContext } from "../context/ShopContext";
 import { deleteProduct } from "../../firebase/products/deleteProduct";
 import { toast } from "react-toastify";
+import { createAdminLog } from "../../firebase/logs/createAdminLog";
 
 const AllProducts = () => {
   const [openUploadProduct, setOpenUploadProduct] = useState(false);
@@ -46,6 +47,15 @@ const AllProducts = () => {
       refreshProducts();
     } catch (error) {
       console.error(error);
+      createAdminLog({
+        event: "admin.product_archive_failed",
+        severity: "warning",
+        source: "admin",
+        message: "Admin failed to archive a product.",
+        context: {
+          productId,
+        },
+      });
       toast.error("Failed to delete product");
     }
   };

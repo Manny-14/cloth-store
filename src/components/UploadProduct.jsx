@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import uploadImage from "../helper/cloudinary";
 import { uploadProduct } from "../../firebase/products/uploadProduct";
 import { productFilterOptions } from "../helper/dropdowns";
+import { createAdminLog } from "../../firebase/logs/createAdminLog";
 
 const UploadProduct = ({ closeUploadProduct }) => {
   const { theme, refreshProducts } = React.useContext(ShopContext);
@@ -49,6 +50,12 @@ const UploadProduct = ({ closeUploadProduct }) => {
       setUploadedImages((prev) => [...prev, ...imageURLS]);
       console.log("Uploaded images", uploadedImages);
     } catch (error) {
+      createAdminLog({
+        event: "admin.product_image_upload_failed",
+        severity: "warning",
+        source: "admin",
+        message: "Admin image upload failed.",
+      });
       toast.error("Image Upload Failed");
     }
   };
@@ -70,6 +77,12 @@ const UploadProduct = ({ closeUploadProduct }) => {
           prev.map((img, i) => (i === index ? imageURL : img))
         );
       } catch (error) {
+        createAdminLog({
+          event: "admin.product_image_replace_failed",
+          severity: "warning",
+          source: "admin",
+          message: "Admin image replacement failed.",
+        });
         toast.error("Image replacement failed");
       }
     }
@@ -136,6 +149,15 @@ const UploadProduct = ({ closeUploadProduct }) => {
       // close the modal:
       closeUploadProduct();
     } catch (error) {
+      createAdminLog({
+        event: "admin.product_upload_failed",
+        severity: "warning",
+        source: "admin",
+        message: "Admin product upload failed.",
+        context: {
+          productType: productData.type,
+        },
+      });
       toast.error("Failed to upload Product");
     }
   };

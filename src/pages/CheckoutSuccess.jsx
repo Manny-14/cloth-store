@@ -4,6 +4,7 @@ import Title from "../components/Title";
 import { fetchCheckoutSession, finalizeCheckoutSession } from "../helper/checkoutSession";
 import { ShopContext } from "../context/ShopContext";
 import { toast } from "react-toastify";
+import { createAdminLog } from "../../firebase/logs/createAdminLog";
 
 const getSessionId = () => {
   // HashRouter: params may live after the hash, e.g. /#/checkout/success?session_id=...
@@ -67,6 +68,12 @@ const CheckoutSuccess = () => {
       } catch (err) {
         console.error("Finalize order failed", err);
         finalizedRef.current = false; // allow manual retry
+        createAdminLog({
+          event: "checkout.finalize_failed",
+          severity: "critical",
+          source: "client",
+          message: "Checkout finalization failed after payment.",
+        });
         toast.error(err?.message || "Unable to finalize order");
         setStatus("error");
       }

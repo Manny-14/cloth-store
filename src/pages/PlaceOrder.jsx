@@ -9,6 +9,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { createStripeCheckoutSession } from "../helper/stripe";
 import { resolveCheckoutAuthToken } from "../helper/checkoutAuth";
 import { calculateShippingFee, estimateCartWeightKg } from "../helper/shipping";
+import { createAdminLog } from "../../firebase/logs/createAdminLog";
 
 const emptyForm = {
   firstName: "",
@@ -228,6 +229,16 @@ const PlaceOrder = () => {
         if (lineItemsWithPrice.length !== orderItems.length) {
           const uniqueNames = [...new Set(missingStripePriceNames)];
           console.error("Missing Stripe prices for products:", uniqueNames);
+          createAdminLog({
+            event: "checkout.missing_stripe_price",
+            severity: "critical",
+            source: "client",
+            message: "Checkout blocked: missing Stripe price IDs.",
+            context: {
+              missingCount: uniqueNames.length,
+              checkoutMode: isBuyNowFlow ? "buy_now" : "cart",
+            },
+          });
           toast.error("Unable to place order. Please try again later.");
           setIsSubmitting(false);
           return;
@@ -267,12 +278,30 @@ const PlaceOrder = () => {
         toast.error("Unable to start Stripe checkout. Please try again.");
       } catch (err) {
         console.error("Stripe checkout failed", err);
+        createAdminLog({
+          event: "checkout.session_create_failed",
+          severity: "critical",
+          source: "client",
+          message: "Stripe checkout session failed to start.",
+          context: {
+            checkoutMode: isBuyNowFlow ? "buy_now" : "cart",
+          },
+        });
         toast.error(err?.message || "Unable to start Stripe checkout. Please try again.");
       } finally {
         setIsSubmitting(false);
       }
     } catch (error) {
       console.error("Failed to place order", error);
+      createAdminLog({
+        event: "checkout.flow_failed",
+        severity: "critical",
+        source: "client",
+        message: "Checkout flow failed before redirect.",
+        context: {
+          checkoutMode: isBuyNowFlow ? "buy_now" : "cart",
+        },
+      });
       toast.error("Failed to place order. Please try again.");
     } finally {
       setIsSubmitting(false);

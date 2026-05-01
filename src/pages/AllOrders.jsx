@@ -13,6 +13,7 @@ import {
   isDisputeActive,
 } from "../helper/orderStatus";
 import { updateOrderDeliveryByAdmin } from "../helper/adminOrders";
+import { createAdminLog } from "../../firebase/logs/createAdminLog";
 
 const toNumber = (value) => {
   const parsed = Number(value);
@@ -127,6 +128,16 @@ const AllOrders = () => {
       fetchOrders();
     } catch (error) {
       console.error("Failed to update delivery", error);
+      createAdminLog({
+        event: "admin.order_delivery_update_failed",
+        severity: "warning",
+        source: "admin",
+        message: "Admin failed to update delivery details.",
+        context: {
+          orderId: order.id,
+          status: draft.status,
+        },
+      });
       toast.error("Could not update order delivery");
     }
   };
