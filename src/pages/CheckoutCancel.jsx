@@ -1,11 +1,9 @@
 import { Link } from "react-router-dom";
 import Title from "../components/Title";
+import { supportTemplates } from "../helper/support";
 
 const CheckoutCancel = () => {
-  const supportEmail = "dressitup1000@gmail.com";
-  const supportHref = `mailto:${supportEmail}?subject=${encodeURIComponent(
-    "Dress-It-Up checkout help"
-  )}`;
+  const supportHref = supportTemplates.checkout();
 
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center">

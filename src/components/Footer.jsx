@@ -1,11 +1,11 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
+import { SUPPORT_EMAIL } from "../helper/support";
 const Footer = () => {
 
   const location = useLocation();
   const { theme } = React.useContext(ShopContext);
-  const supportEmail = "dressitup1000@gmail.com";
   const headingColor = theme === "dark" ? "text-white" : "text-gray-900";
   const bodyColor = theme === "dark" ? "text-gray-300" : "text-gray-600";
   const borderColor = theme === "dark" ? "border-gray-800" : "border-gray-200";
@@ -49,8 +49,8 @@ const Footer = () => {
           </p>
           <ul className={`flex flex-col gap-1 ${bodyColor}`}>
             <li>
-              <a className="underline underline-offset-4" href={`mailto:${supportEmail}`}>
-                {supportEmail}
+              <a className="underline underline-offset-4" href={`mailto:${SUPPORT_EMAIL}`}>
+                {SUPPORT_EMAIL}
               </a>
             </li>
           </ul>

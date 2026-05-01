@@ -204,12 +204,12 @@ const AllOrders = () => {
         {filteredOrders.map((order) => (
           <div
             key={order.id}
-            className={`p-4 border rounded-lg ${borderColor} ${cardBg} flex flex-col gap-3`}
+            className={`p-4 border rounded-lg ${borderColor} ${cardBg} flex flex-col gap-3 min-w-0`}
           >
             <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-              <div>
+              <div className="min-w-0">
                 <p className={`font-semibold ${textColor}`}>Order #{order.id.slice(-6)}</p>
-                <p className={`text-xs ${mutedText}`}>
+                <p className={`text-xs break-words ${mutedText}`}>
                   Placed {formatDate(order.createdAt)} by {order.customerName || "Guest"} ({
                     order.userEmail || "unknown"
                   })
@@ -251,13 +251,13 @@ const AllOrders = () => {
                     alt={item.productName}
                     className="w-12 h-12 object-cover rounded"
                   />
-                  <div className="flex-1 text-sm">
-                    <p className={`font-medium ${textColor}`}>{item.productName}</p>
+                  <div className="flex-1 min-w-0 text-sm">
+                    <p className={`font-medium break-words ${textColor}`}>{item.productName}</p>
                     <p className={`text-xs ${mutedText}`}>
                       Qty: {item.quantity} · Size: {item.size}
                     </p>
                   </div>
-                  <p className={`text-sm font-medium ${textColor}`}>
+                  <p className={`text-sm font-medium shrink-0 ${textColor}`}>
                     {currency}
                     {(
                       toNumber(item.pricePerUnit || item.price || 0) * toNumber(item.quantity)
@@ -268,7 +268,7 @@ const AllOrders = () => {
             </div>
 
             {order.shippingAddress && (
-              <div className={`text-xs ${mutedText}`}>
+              <div className={`text-xs break-words ${mutedText}`}>
                 Ship to: {order.shippingAddress.street}, {order.shippingAddress.city},
                 {" "}
                 {order.shippingAddress.state} {order.shippingAddress.zip}, {" "}
@@ -323,7 +323,7 @@ const AllOrders = () => {
                   )}
                 </div>
                 {order.dispute.stripeDisputeId && (
-                  <p className={`text-xs mt-2 ${mutedText}`}>
+                  <p className={`text-xs mt-2 break-all ${mutedText}`}>
                     Dispute ID: {order.dispute.stripeDisputeId}
                   </p>
                 )}
@@ -336,7 +336,7 @@ const AllOrders = () => {
                 <select
                   value={getDraft(order).status}
                   onChange={(e) => setDraftField(order, "status", e.target.value)}
-                  className={`border rounded px-2 py-1 text-xs ${adminInputClasses}`}
+                  className={`border rounded px-2 py-2 text-xs min-w-0 ${adminInputClasses}`}
                 >
                   {statusOptions
                     .filter((option) => option !== "all")
@@ -351,21 +351,21 @@ const AllOrders = () => {
                   placeholder="Carrier"
                   value={getDraft(order).carrier}
                   onChange={(e) => setDraftField(order, "carrier", e.target.value)}
-                  className={`border rounded px-2 py-1 text-xs ${adminInputClasses}`}
+                  className={`border rounded px-2 py-2 text-xs min-w-0 ${adminInputClasses}`}
                 />
                 <input
                   type="text"
                   placeholder="Tracking Number"
                   value={getDraft(order).trackingNumber}
                   onChange={(e) => setDraftField(order, "trackingNumber", e.target.value)}
-                  className={`border rounded px-2 py-1 text-xs ${adminInputClasses}`}
+                  className={`border rounded px-2 py-2 text-xs min-w-0 ${adminInputClasses}`}
                 />
                 <input
                   type="text"
                   placeholder="Tracking URL"
                   value={getDraft(order).trackingUrl}
                   onChange={(e) => setDraftField(order, "trackingUrl", e.target.value)}
-                  className={`border rounded px-2 py-1 text-xs ${adminInputClasses}`}
+                  className={`border rounded px-2 py-2 text-xs min-w-0 ${adminInputClasses}`}
                 />
               </div>
               <div className="mt-2 flex justify-end">

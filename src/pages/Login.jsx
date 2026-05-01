@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import { toast } from 'react-toastify';
 import { doSignInWithEmailAndPassword } from '../../firebase/auth';
+import { supportTemplates } from '../helper/support';
 
 const Login = () => {
-  const supportEmail = "dressitup1000@gmail.com";
+  const supportHref = supportTemplates.account();
   const [user, setUser] = useState({
       email: '',
       password: '',
@@ -79,7 +80,7 @@ const Login = () => {
         </div>
         <div className="w-full flex justify-between text-sm mt-[-10px]">
           <a
-            href={`mailto:${supportEmail}?subject=${encodeURIComponent("Dress-It-Up account help")}`}
+            href={supportHref}
             className="cursor-pointer"
           >
             Need account help?

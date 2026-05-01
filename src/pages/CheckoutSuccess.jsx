@@ -5,6 +5,7 @@ import { fetchCheckoutSession, finalizeCheckoutSession } from "../helper/checkou
 import { ShopContext } from "../context/ShopContext";
 import { toast } from "react-toastify";
 import { createAdminLog } from "../../firebase/logs/createAdminLog";
+import { supportTemplates } from "../helper/support";
 
 const getSessionId = () => {
   // HashRouter: params may live after the hash, e.g. /#/checkout/success?session_id=...
@@ -22,10 +23,7 @@ const getSessionId = () => {
 const CheckoutSuccess = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id") || getSessionId();
-  const supportEmail = "dressitup1000@gmail.com";
-  const supportHref = `mailto:${supportEmail}?subject=${encodeURIComponent(
-    "Dress-It-Up order finalization help"
-  )}`;
+  const supportHref = supportTemplates.orderFinalization();
   const navigate = useNavigate();
   const { clearCart, refreshProducts } = React.useContext(ShopContext);
   const [status, setStatus] = React.useState("pending");

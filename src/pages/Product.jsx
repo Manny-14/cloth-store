@@ -6,12 +6,9 @@ import RelatedProducts from "../components/RelatedProducts";
 import { getProduct } from "../../firebase/products/getProduct";
 import { toast } from "react-toastify";
 import { NON_SIZED_KEY, hasSizeVariants } from "../helper/inventory";
+import { supportTemplates } from "../helper/support";
 const Product = () => {
   const { productId } = useParams();
-  const supportEmail = "dressitup1000@gmail.com";
-  const supportHref = `mailto:${supportEmail}?subject=${encodeURIComponent(
-    "Dress-It-Up product help"
-  )}`;
   const {
     products,
     currency,
@@ -148,6 +145,15 @@ const Product = () => {
     if (!productData) return;
     setIsImageLoaded(false);
   }, [activeImage, productData]);
+
+  const supportHref = React.useMemo(
+    () =>
+      supportTemplates.product({
+        productName: productData?.name || "",
+        productId,
+      }),
+    [productData?.name, productId]
+  );
 
   const handleBuyNow = async () => {
     if (!productData || productSoldOut) return;

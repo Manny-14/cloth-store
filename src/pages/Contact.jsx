@@ -2,13 +2,11 @@ import React from "react"
 import { assets } from "../assets/assets"
 import Title from "../components/Title"
 import { ShopContext } from "../context/ShopContext"
+import { SUPPORT_EMAIL, supportTemplates } from "../helper/support"
 const Contact = () => {
 
   const {theme } = React.useContext(ShopContext);
-  const supportEmail = "dressitup1000@gmail.com";
-  const supportHref = `mailto:${supportEmail}?subject=${encodeURIComponent(
-    "Dress-It-Up support request"
-  )}`;
+  const supportHref = supportTemplates.general();
   const borderColor = theme === "dark" ? "border-gray-800" : "border-gray-200";
   const textColor = theme === "dark" ? "text-gray-300" : "text-gray-700";
   const panelBg = theme === "dark" ? "bg-slate-900" : "bg-slate-50";
@@ -31,8 +29,8 @@ const Contact = () => {
           <p className="text-gray-500">54709 Willms Station<br/>Suite 350, Washington, USA</p> */}
           <p>
             Email:{" "}
-            <a className="underline underline-offset-4" href={`mailto:${supportEmail}`}>
-              {supportEmail}
+            <a className="underline underline-offset-4" href={`mailto:${SUPPORT_EMAIL}`}>
+              {SUPPORT_EMAIL}
             </a>
           </p>
           <div className={`text-sm border rounded-lg p-4 w-full ${borderColor} ${panelBg}`}>
