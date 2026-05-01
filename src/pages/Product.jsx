@@ -267,8 +267,12 @@ const Product = () => {
                       onClick={() => setSize(item)}
                       className={`border min-w-[2.75rem] py-2.5 px-4 text-sm ${
                         item === size
-                          ? "bg-blue-950 text-white border-blue-950"
-                          : "bg-gray-100 text-black"
+                          ? theme === "dark"
+                            ? "bg-slate-200 text-slate-900 border-slate-200"
+                            : "bg-blue-950 text-white border-blue-950"
+                          : theme === "dark"
+                          ? "bg-slate-800 text-slate-100 border-slate-700"
+                          : "bg-gray-100 text-black border-gray-200"
                       } rounded active:scale-95 transition-transform`}
                     >
                       {item}

@@ -46,6 +46,7 @@ const Navbar = () => {
   // Dynamic classnames for theme
   const textColor = theme === "dark" ? "text-white" : "text-gray-700";
   const iconColor = theme === "dark" ? "filter invert" : "";
+  const dropdownItemHover = theme === "dark" ? "hover:text-white" : "hover:text-black";
 
   // Close sidebar on route change
   useEffect(() => {
@@ -131,18 +132,20 @@ const Navbar = () => {
             {
               userLoggedIn && (
                 <div
-                  className={`flex flex-col items-center gap-2 w-36 py-2  text-gray-500 rounded ${
-                    theme === "dark" ? "bg-gray-800" : "bg-slate-100"
+                  className={`flex flex-col items-center gap-2 w-36 py-2 rounded ${
+                    theme === "dark"
+                      ? "bg-gray-800 text-gray-300"
+                      : "bg-slate-100 text-gray-500"
                   }`}
                 >
-                  <Link to="/profile"><p className="cursor-pointer hover:text-black">My Account</p></Link>
-                  <Link to="/orders"><p className="cursor-pointer hover:text-black">Orders</p></Link>
+                  <Link to="/profile"><p className={`cursor-pointer ${dropdownItemHover}`}>My Account</p></Link>
+                  <Link to="/orders"><p className={`cursor-pointer ${dropdownItemHover}`}>Orders</p></Link>
                   {
                     currentUser?.role === "ADMIN" && (
-                      <Link to="/admin-panel/all-users"><p className="cursor-pointer hover:text-black hidden md:block">Admin Panel</p></Link>
+                      <Link to="/admin-panel/all-users"><p className={`cursor-pointer hidden md:block ${dropdownItemHover}`}>Admin Panel</p></Link>
                     )
                   }
-                  <Link onClick={logoutHandler} to="/login"><p className="cursor-pointer hover:text-black">Logout</p></Link>
+                  <Link onClick={logoutHandler} to="/login"><p className={`cursor-pointer ${dropdownItemHover}`}>Logout</p></Link>
                 </div>
               )
             }

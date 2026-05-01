@@ -33,6 +33,10 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
   const modalBg = theme === "light" ? "bg-white" : "bg-black";
   const inputBg = theme === "light" ? "bg-slate-50" : "bg-slate-900";
   const dropzoneBg = theme === "light" ? "bg-slate-100" : "bg-slate-800";
+  const overlayActionClasses =
+    theme === "dark"
+      ? "bg-slate-900 text-slate-100 border border-slate-700"
+      : "bg-white text-black border border-slate-200";
 
   const handleOnChange = (e) => {
     setProductData({ ...productData, [e.target.name]: e.target.value });
@@ -331,7 +335,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
                         className="rounded-md object-cover w-20 h-20"
                       />
                       <div className="absolute top-0 rounded-md w-full h-full bg-slate-500 opacity-0 hover:opacity-70 flex flex-col gap-2 items-center justify-center">
-                        <label className="px-2 bg-white text-black rounded-full text-sm  cursor-pointer hover:scale-105">
+                        <label className={`px-2 rounded-full text-sm cursor-pointer hover:scale-105 ${overlayActionClasses}`}>
                           <input
                             type="file"
                             accept="image/*"
@@ -342,7 +346,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
                         </label>
                         <button
                           type="button"
-                          className="px-2 bg-white text-black rounded-full text-sm cursor-pointer hover:scale-105"
+                          className={`px-2 rounded-full text-sm cursor-pointer hover:scale-105 ${overlayActionClasses}`}
                           onClick={() => handleDeleteImage(index)}
                         >
                           Remove

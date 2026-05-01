@@ -21,6 +21,12 @@ const Login = () => {
   };
 
   const { theme, navigate } = React.useContext(ShopContext);
+  const inputClasses =
+    theme === "dark"
+      ? "bg-slate-900 border-gray-700 text-white placeholder:text-gray-400"
+      : "bg-white border-gray-800 text-black placeholder:text-gray-500";
+  const toggleTextColor = theme === "dark" ? "text-gray-300" : "text-gray-600";
+  const dividerColor = theme === "dark" ? "bg-gray-200" : "bg-gray-800";
 
   const onSubmitHandler = async(e) => {
     e.preventDefault();
@@ -41,13 +47,13 @@ const Login = () => {
       >
         <div className="inline-flex items-center gap-2 mb-2 mt-10">
           <p className="prata-regular text-lg">Login</p>
-          <hr className="border-none h-[1.5px] w-8 bg-gray-800" />
+          <hr className={`border-none h-[1.5px] w-8 ${dividerColor}`} />
         </div>
         <input
           name='email'
           value={user.email}
           type="email"
-          className="w-full px-3 py-2 border border-gray-800 text-black"
+          className={`w-full px-3 py-2 border ${inputClasses}`}
           placeholder="Email Address"
           required
           onChange={onChangeHandler}
@@ -57,7 +63,7 @@ const Login = () => {
             name='password'
             value={user.password}
             type={showPassword ? "text" : "password"}
-            className="w-full px-3 py-2 border border-gray-800 text-black pr-12"
+            className={`w-full px-3 py-2 border pr-12 ${inputClasses}`}
             placeholder="Password"
             required
             onChange={onChangeHandler}
@@ -65,7 +71,7 @@ const Login = () => {
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600"
+            className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${toggleTextColor}`}
           >
             {showPassword ? "Hide" : "Show"}
           </button>

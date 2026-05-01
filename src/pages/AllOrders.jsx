@@ -69,6 +69,10 @@ const AllOrders = () => {
   const cardBg = theme === "dark" ? "bg-gray-900" : "bg-white";
   const textColor = theme === "dark" ? "text-gray-100" : "text-gray-700";
   const mutedText = theme === "dark" ? "text-gray-400" : "text-gray-500";
+  const adminInputClasses =
+    theme === "dark"
+      ? "bg-gray-900 border-gray-700 text-slate-100 placeholder:text-slate-400"
+      : "bg-white border-gray-300 text-gray-800 placeholder:text-gray-500";
 
   const filteredOrders = React.useMemo(() => {
     if (statusFilter === "all") return orders;
@@ -160,9 +164,7 @@ const AllOrders = () => {
             id="statusFilter"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className={`border rounded px-3 py-1 text-sm ${
-              theme === "dark" ? "bg-gray-900 border-gray-700" : "bg-white border-gray-300"
-            }`}
+            className={`border rounded px-3 py-1 text-sm ${adminInputClasses}`}
           >
             {statusOptions.map((option) => (
               <option key={option} value={option}>
@@ -323,9 +325,7 @@ const AllOrders = () => {
                 <select
                   value={getDraft(order).status}
                   onChange={(e) => setDraftField(order, "status", e.target.value)}
-                  className={`border rounded px-2 py-1 text-xs ${
-                    theme === "dark" ? "bg-gray-900 border-gray-700" : "bg-white border-gray-300"
-                  }`}
+                  className={`border rounded px-2 py-1 text-xs ${adminInputClasses}`}
                 >
                   {statusOptions
                     .filter((option) => option !== "all")
@@ -340,27 +340,21 @@ const AllOrders = () => {
                   placeholder="Carrier"
                   value={getDraft(order).carrier}
                   onChange={(e) => setDraftField(order, "carrier", e.target.value)}
-                  className={`border rounded px-2 py-1 text-xs ${
-                    theme === "dark" ? "bg-gray-900 border-gray-700" : "bg-white border-gray-300"
-                  }`}
+                  className={`border rounded px-2 py-1 text-xs ${adminInputClasses}`}
                 />
                 <input
                   type="text"
                   placeholder="Tracking Number"
                   value={getDraft(order).trackingNumber}
                   onChange={(e) => setDraftField(order, "trackingNumber", e.target.value)}
-                  className={`border rounded px-2 py-1 text-xs ${
-                    theme === "dark" ? "bg-gray-900 border-gray-700" : "bg-white border-gray-300"
-                  }`}
+                  className={`border rounded px-2 py-1 text-xs ${adminInputClasses}`}
                 />
                 <input
                   type="text"
                   placeholder="Tracking URL"
                   value={getDraft(order).trackingUrl}
                   onChange={(e) => setDraftField(order, "trackingUrl", e.target.value)}
-                  className={`border rounded px-2 py-1 text-xs ${
-                    theme === "dark" ? "bg-gray-900 border-gray-700" : "bg-white border-gray-300"
-                  }`}
+                  className={`border rounded px-2 py-1 text-xs ${adminInputClasses}`}
                 />
               </div>
               <div className="mt-2 flex justify-end">

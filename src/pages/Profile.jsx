@@ -10,6 +10,11 @@ import { toast } from 'react-toastify';
 const Profile = () => {
     const { currentUser } = useAuth();
     const { theme } = React.useContext(ShopContext)
+    const inputClasses =
+        theme === "dark"
+            ? "bg-slate-900 border-gray-700 text-white placeholder:text-gray-400"
+            : "bg-white border-gray-800 text-black placeholder:text-gray-500";
+    const iconColor = theme === "dark" ? "text-gray-300" : "text-gray-700";
     // update display name opens the input field to update the display name
     const [ openUpdateDisplayName, setOpenUpdateDisplayName ] = useState(false);
     // display name holds the state of the input field
@@ -97,13 +102,13 @@ const Profile = () => {
                                 name='name'
                                 value={displayName}
                                 type="text"
-                                className="w-full px-3 py-2 border border-gray-800 text-black"
+                                className={`w-full px-3 py-2 border ${inputClasses}`}
                                 placeholder="Display Name"
                                 required
                                 onChange={onChangeHandler}
                             />
                             <MdOutlineCancel 
-                                className='absolute -right-2 -top-2 text-lg cursor-pointer'
+                                className={`absolute -right-2 -top-2 text-lg cursor-pointer ${iconColor}`}
                                 onClick={()=>setOpenUpdateDisplayName(false)} />
                         </div>
                         <button

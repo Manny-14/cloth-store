@@ -11,6 +11,19 @@ const ProductCard = ({
   isSoldOut = false,
 }) => {
   const isSizeBasedProduct = product.hasSizes !== false;
+  const imageBorder = theme === "dark" ? "border-slate-700" : "border-gray-200";
+  const costChip =
+    theme === "dark"
+      ? "bg-blue-900/60 text-blue-100"
+      : "bg-blue-100 text-blue-800";
+  const priceChip =
+    theme === "dark"
+      ? "bg-emerald-900/60 text-emerald-100"
+      : "bg-green-100 text-green-800";
+  const sizeChip =
+    theme === "dark"
+      ? "bg-slate-800 text-slate-100"
+      : "bg-gray-100 text-gray-800";
 
   return (
     <div
@@ -24,7 +37,7 @@ const ProductCard = ({
         <img
           src={product.images && product.images[0]}
           alt={product.productName}
-          className="w-24 h-24 object-cover rounded-md border"
+          className={`w-24 h-24 object-cover rounded-md border ${imageBorder}`}
         />
         <div className="flex-1">
           <h3 className="font-semibold text-lg line-clamp-2">
@@ -42,11 +55,11 @@ const ProductCard = ({
       </div>
       <div className="flex flex-col gap-1 mt-2">
         <div className="flex gap-2 text-xs mb-1">
-          <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+          <span className={`px-2 py-0.5 rounded ${costChip}`}>
             Cost: {currency}
             {product.costPrice}
           </span>
-          <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">
+          <span className={`px-2 py-0.5 rounded ${priceChip}`}>
             Price: {currency}
             {product.sellingPrice}
           </span>
@@ -54,21 +67,21 @@ const ProductCard = ({
         <div className="flex flex-wrap gap-2 text-xs">
           {isSizeBasedProduct ? (
             <>
-              <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+              <span className={`px-2 py-0.5 rounded ${sizeChip}`}>
                 S: {product.smallQuantity || 0}
               </span>
-              <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+              <span className={`px-2 py-0.5 rounded ${sizeChip}`}>
                 M: {product.mediumQuantity || 0}
               </span>
-              <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+              <span className={`px-2 py-0.5 rounded ${sizeChip}`}>
                 L: {product.largeQuantity || 0}
               </span>
-              <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+              <span className={`px-2 py-0.5 rounded ${sizeChip}`}>
                 XL: {product.xlQuantity || 0}
               </span>
             </>
           ) : (
-            <span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded">
+            <span className={`px-2 py-0.5 rounded ${sizeChip}`}>
               Stock: {product.stockQuantity || product.totalQuantity || 0}
             </span>
           )}

@@ -26,6 +26,12 @@ const Signup = () => {
     };
 
     const { theme, navigate } = React.useContext(ShopContext);
+    const inputClasses =
+      theme === "dark"
+        ? "bg-slate-900 border-gray-700 text-white placeholder:text-gray-400"
+        : "bg-white border-gray-800 text-black placeholder:text-gray-500";
+    const toggleTextColor = theme === "dark" ? "text-gray-300" : "text-gray-600";
+    const dividerColor = theme === "dark" ? "bg-gray-200" : "bg-gray-800";
     
     const onSubmitHandler = async (e) => {
         e.preventDefault();
@@ -49,13 +55,13 @@ const Signup = () => {
       >
         <div className="inline-flex items-center gap-2 mb-2 mt-10">
           <p className="prata-regular text-lg">Sign up</p>
-          <hr className="border-none h-[1.5px] w-8 bg-gray-800" />
+          <hr className={`border-none h-[1.5px] w-8 ${dividerColor}`} />
         </div>
         <input
             name='name'
             value={user.name}
             type="text"
-            className="w-full px-3 py-2 border border-gray-800 text-black"
+            className={`w-full px-3 py-2 border ${inputClasses}`}
             placeholder="Full Name"
             onChange={onChangeHandler}
             required
@@ -64,7 +70,7 @@ const Signup = () => {
             name='email'
             value={user.email}
             type="email"
-            className="w-full px-3 py-2 border border-gray-800 text-black"
+            className={`w-full px-3 py-2 border ${inputClasses}`}
             placeholder="Email Address"
             onChange={onChangeHandler}
             required
@@ -74,7 +80,7 @@ const Signup = () => {
             name='password'  
             type={showPassword ? "text" : "password"}
             value={user.password}
-            className="w-full px-3 py-2 border border-gray-800 text-black pr-12"
+            className={`w-full px-3 py-2 border pr-12 ${inputClasses}`}
             placeholder="Password"
             onChange={onChangeHandler}
             required
@@ -82,7 +88,7 @@ const Signup = () => {
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600"
+            className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${toggleTextColor}`}
           >
             {showPassword ? "Hide" : "Show"}
           </button>
@@ -92,7 +98,7 @@ const Signup = () => {
             name='confirmPassword'
             type={showConfirmPassword ? "text" : "password"}
             value={user.confirmPassword}
-            className="w-full px-3 py-2 border border-gray-800 text-black pr-12"
+            className={`w-full px-3 py-2 border pr-12 ${inputClasses}`}
             placeholder="Confirm Password"
             onChange={onChangeHandler}
             required
@@ -100,7 +106,7 @@ const Signup = () => {
           <button
             type="button"
             onClick={() => setShowConfirmPassword((prev) => !prev)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-600"
+            className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${toggleTextColor}`}
           >
             {showConfirmPassword ? "Hide" : "Show"}
           </button>

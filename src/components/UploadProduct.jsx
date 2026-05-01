@@ -9,6 +9,10 @@ import { productFilterOptions } from "../helper/dropdowns";
 
 const UploadProduct = ({ closeUploadProduct }) => {
   const { theme, refreshProducts } = React.useContext(ShopContext);
+  const overlayActionClasses =
+    theme === "dark"
+      ? "bg-slate-900 text-slate-100 border border-slate-700"
+      : "bg-white text-black border border-slate-200";
   const [productData, setProductData] = useState({
     productName: "",
     costPrice: "",
@@ -388,7 +392,7 @@ const UploadProduct = ({ closeUploadProduct }) => {
                         className="rounded-md object-cover w-20 h-20" // TODO: Since I'm using object cover, will put a view image in full screen feature
                       />
                       <div className="absolute top-0 rounded-md w-full h-full bg-slate-500 opacity-0 hover:opacity-70 flex flex-col gap-2 items-center justify-center">
-                        <label className="px-2 bg-white text-black rounded-full text-sm  cursor-pointer hover:scale-105">
+                        <label className={`px-2 rounded-full text-sm cursor-pointer hover:scale-105 ${overlayActionClasses}`}>
                           <input
                             type="file"
                             accept="image/*"
@@ -399,7 +403,7 @@ const UploadProduct = ({ closeUploadProduct }) => {
                         </label>
                         <button
                           type="button"
-                          className="px-2 bg-white text-black rounded-full text-sm cursor-pointer hover:scale-105"
+                          className={`px-2 rounded-full text-sm cursor-pointer hover:scale-105 ${overlayActionClasses}`}
                           onClick={() => handleDeleteImage(index)}
                         >
                           Remove

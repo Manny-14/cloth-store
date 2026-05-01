@@ -13,6 +13,7 @@ const LatestCollection = () => {
 
   const descriptionColor =
     theme === "dark" ? "text-gray-300" : "text-gray-600";
+  const loadingColor = theme === "dark" ? "text-gray-400" : "text-gray-500";
 
   return (
     <div className="my-10">
@@ -25,7 +26,7 @@ const LatestCollection = () => {
         </p>
       </div>
       {productsLoading ? (
-        <div className="text-center text-sm text-gray-500">Loading products...</div>
+        <div className={`text-center text-sm ${loadingColor}`}>Loading products...</div>
       ) : productsError ? (
         <div className="text-center text-red-500 text-sm">{productsError}</div>
       ) : (

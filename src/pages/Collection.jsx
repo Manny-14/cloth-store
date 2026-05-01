@@ -20,6 +20,11 @@ const Collection = () => {
   const [filterProducts, setFilterProducts] = useState([]);
   const [productTypes, setProductTypes] = useState([]);
   const [sortType, setSortType] = useState("relevant");
+  const filterBorder = theme === "dark" ? "border-gray-700" : "border-gray-300";
+  const selectClasses =
+    theme === "dark"
+      ? "bg-slate-900 text-slate-200 border-gray-700"
+      : "bg-white text-black border-gray-300";
 
   const toggleType = (e) => {
     const value = e.target.value;
@@ -73,7 +78,7 @@ const Collection = () => {
           />
         </p>
         <div
-          className={`border border-gray-300 pl-5 py-3 mt-6 ${
+          className={`border pl-5 py-3 mt-6 ${filterBorder} ${
             showFilter ? "" : "hidden"
           } sm:block`}
         >
@@ -101,7 +106,7 @@ const Collection = () => {
           {/* Product Sort */}
           <select
             onChange={(e) => setSortType(e.target.value)}
-            className="border-2 border-gray-300 text-xs sm:text-sm px-2 py-1.5 rounded text-black select-menu"
+            className={`border-2 text-xs sm:text-sm px-2 py-1.5 rounded select-menu ${selectClasses}`}
           >
             <option value="relevant">Sort by: Relevant</option>
             <option value="low-high">Sort by: Low-High</option>

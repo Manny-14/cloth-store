@@ -33,7 +33,7 @@ const AllUsers = () => {
       {/** All Users table */}
       <div className='w-full flex justify-center'>
         <table className='w-full'>
-          <thead className={`${theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'}`}>
+          <thead className={`${theme === 'light' ? 'bg-black text-white' : 'bg-gray-900 text-white'}`}>
             <tr>
               <th className='text-left py-1 px-4'>S/N</th>
               <th className='text-left py-1 px-4'>Name</th>

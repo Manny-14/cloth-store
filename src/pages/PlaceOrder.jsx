@@ -47,6 +47,10 @@ const PlaceOrder = () => {
     getSizeQuantity,
   } = React.useContext(ShopContext);
   const { currentUser } = useAuth();
+  const inputClasses =
+    theme === "dark"
+      ? "bg-slate-900 text-white border-gray-700 placeholder:text-gray-400"
+      : "bg-white text-black border-gray-300 placeholder:text-gray-500";
 
   const deliveryMethod = "standard_shipping";
   const [formData, setFormData] = React.useState(() => {
@@ -290,7 +294,7 @@ const PlaceOrder = () => {
               name="firstName"
               value={formData.firstName}
               onChange={handleInputChange}
-              className="w-full border rounded py-1.5 px-3.5 text-black"
+              className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
               required
             />
             <input
@@ -299,7 +303,7 @@ const PlaceOrder = () => {
               name="lastName"
               value={formData.lastName}
               onChange={handleInputChange}
-              className="w-full border rounded py-1.5 px-3.5 text-black"
+              className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
               required
             />
           </div>
@@ -309,7 +313,7 @@ const PlaceOrder = () => {
             name="email"
             value={formData.email}
             onChange={handleInputChange}
-            className="w-full border rounded py-1.5 px-3.5 text-black"
+            className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
             required
           />
           <input
@@ -318,7 +322,7 @@ const PlaceOrder = () => {
             name="street"
             value={formData.street}
             onChange={handleInputChange}
-            className="w-full border rounded py-1.5 px-3.5 text-black"
+            className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
             required
           />
           <div className="flex gap-3">
@@ -328,7 +332,7 @@ const PlaceOrder = () => {
               name="city"
               value={formData.city}
               onChange={handleInputChange}
-              className="w-full border rounded py-1.5 px-3.5 text-black"
+              className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
               required
             />
             <input
@@ -337,7 +341,7 @@ const PlaceOrder = () => {
               name="state"
               value={formData.state}
               onChange={handleInputChange}
-              className="w-full border rounded py-1.5 px-3.5 text-black"
+              className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
               required
             />
           </div>
@@ -348,7 +352,7 @@ const PlaceOrder = () => {
               name="zip"
               value={formData.zip}
               onChange={handleInputChange}
-              className="w-full border rounded py-1.5 px-3.5 text-black"
+              className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
               required
             />
             <input
@@ -357,7 +361,7 @@ const PlaceOrder = () => {
               name="country"
               value={formData.country}
               onChange={handleInputChange}
-              className="w-full border rounded py-1.5 px-3.5 text-black"
+              className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
               required
             />
           </div>
@@ -367,7 +371,7 @@ const PlaceOrder = () => {
             name="phone"
             value={formData.phone}
             onChange={handleInputChange}
-            className="w-full border rounded py-1.5 px-3.5 text-black"
+            className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
             required
           />
 

@@ -20,6 +20,18 @@ const Cart = () => {
     React.useContext(ShopContext);
   const [cartData, setCartData] = React.useState([]);
   const iconColor = theme === "dark" ? "filter invert" : "";
+  const sizeBadgeClasses =
+    theme === "dark"
+      ? "bg-slate-900 text-slate-200 border-gray-700"
+      : "bg-white text-slate-600 border-gray-200";
+  const selectWrapClasses =
+    theme === "dark"
+      ? "bg-slate-900 text-slate-200 border-gray-700"
+      : "bg-white text-slate-700 border-gray-200";
+  const quantityInputClasses =
+    theme === "dark"
+      ? "bg-slate-900 text-white border-gray-700"
+      : "bg-white text-black border-gray-300";
 
   React.useEffect(() => {
     const cartData = Object.entries(cartItems).flatMap(([id, sizes]) =>
@@ -117,7 +129,7 @@ const Cart = () => {
                         {productData.price}
                       </p>
                       {isSizeBasedProduct ? (
-                        <div className="px-2 sm:px-3 sm:py-1 border text-sm bg-white rounded">
+                        <div className={`px-2 sm:px-3 sm:py-1 border text-sm rounded ${selectWrapClasses}`}>
                           <label className="sr-only" htmlFor={`size-${item._id}-${item.size}`}>
                             Change size
                           </label>
@@ -141,7 +153,7 @@ const Cart = () => {
                           </select>
                         </div>
                       ) : (
-                        <div className="px-2 sm:px-3 sm:py-1 border text-xs bg-white rounded text-slate-600">
+                        <div className={`px-2 sm:px-3 sm:py-1 border text-xs rounded ${sizeBadgeClasses}`}>
                           One size
                         </div>
                       )}
@@ -165,7 +177,7 @@ const Cart = () => {
                           Number(e.target.value)
                         );
                       }}
-                      className="border w-12 px-2 py-1.5 text-center text-sm text-black rounded"
+                      className={`border w-12 px-2 py-1.5 text-center text-sm rounded ${quantityInputClasses}`}
                     />
                     {sizeStock > 0 && (
                       <p
