@@ -131,9 +131,7 @@ Current shipping logic is centralized in `src/helper/shipping.js`.
 Rules:
 
 - `standard_shipping`: `$7.99`
-- `doorstep_delivery`: `$12.99`
-- free standard shipping when subtotal `>= $150`
-- doorstep discounted to `$8.99` when subtotal `>= $150`
+- free standard shipping when subtotal `>= $75`
 - weight surcharge: `+$2` if estimated cart weight > 4kg, `+$4` if > 8kg
 
 Weight assumptions for now (used if product has no explicit `weightKg`):
@@ -147,6 +145,15 @@ Implementation notes:
 - Checkout computes a client-side estimate for UX only.
 - Server recomputes shipping from trusted Stripe price/product data and appends a shipping line item in Stripe Checkout.
 - Order record stores the fee in `deliveryFee`, and delivery metadata/status is created on payment success.
+
+## Product sizing policy
+
+Products are split into two inventory models:
+
+- **Sized products**: use this for apparel with selectable fit sizes, such as shirts, hoodies, sweaters, or other items that naturally map to `S`, `M`, `L`, and `XL`. Stock is tracked per size, and customers must choose a size before adding the item to cart.
+- **Non-sized products**: use this for one-size or measurement-specific items, such as towels, towel sets, jewelry, accessories, and similar goods. Stock is tracked as one total quantity.
+
+For towels and other measurement-specific products, keep them as non-sized products and include the specific measurement in the product title or description, for example `Embroidered Towel Set 27x54`. This avoids making dimensions look like apparel size choices while still showing customers the exact product size before purchase.
 
 ### Local-only utility scripts
 
