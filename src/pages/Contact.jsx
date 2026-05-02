@@ -1,5 +1,5 @@
 import React from "react"
-import { assets } from "../assets/assets"
+import { FiMail, FiPackage, FiRefreshCw } from "react-icons/fi"
 import Title from "../components/Title"
 import { ShopContext } from "../context/ShopContext"
 import { SUPPORT_EMAIL, supportTemplates } from "../helper/support"
@@ -9,57 +9,100 @@ const Contact = () => {
   const supportHref = supportTemplates.general();
   const borderColor = theme === "dark" ? "border-gray-800" : "border-gray-200";
   const textColor = theme === "dark" ? "text-gray-300" : "text-gray-700";
-  const panelBg = theme === "dark" ? "bg-slate-900" : "bg-slate-50";
+  const mutedText = theme === "dark" ? "text-gray-400" : "text-gray-500";
+  const panelBg = theme === "dark" ? "bg-slate-900/80" : "bg-slate-50";
+  const softPanelBg = theme === "dark" ? "bg-slate-950" : "bg-white";
+  const iconPanel = theme === "dark" ? "bg-slate-800 text-slate-100" : "bg-slate-100 text-slate-900";
   const buttonClasses =
     theme === "dark"
       ? "bg-white text-black hover:bg-slate-200"
       : "bg-black text-white hover:bg-slate-800";
+  const secondaryButtonClasses =
+    theme === "dark"
+      ? "border-gray-700 text-slate-100 hover:bg-slate-900"
+      : "border-gray-300 text-slate-900 hover:bg-slate-50";
 
   return (
     <div className="transition-colors duration-300">
-
       <div className={`text-center text-lg pt-10 border-t ${borderColor}`}>
         <Title text1={"CONTACT"} text2={"US"}/>
       </div>
 
-      <div className="my-10 flex flex-col justify-center md:flex-row gap-10 mb-28">
-        <img src={assets.contact_img} alt="contact us image" className="w-full md:max-w-[480px]"/>
-        <div className={`flex flex-col my-10 text-lg items-start gap-6 ${textColor}`}>
-          {/* <p className="font-semi-bold text-lg">Our Store</p>
-          <p className="text-gray-500">54709 Willms Station<br/>Suite 350, Washington, USA</p> */}
-          <p>
-            Email:{" "}
-            <a className="underline underline-offset-4" href={`mailto:${SUPPORT_EMAIL}`}>
-              {SUPPORT_EMAIL}
-            </a>
-          </p>
-          <div className={`text-sm border rounded-lg p-4 w-full ${borderColor} ${panelBg}`}>
-            <p className="font-semibold mb-2">Message Vendor</p>
-            <p className="mb-4">
-              For checkout issues, order questions, or product concerns, email us
-              with your order number if you have one.
+      <div className="mx-auto my-10 mb-24 max-w-5xl">
+        <div className={`grid overflow-hidden rounded-lg border ${borderColor} ${softPanelBg} md:grid-cols-[1.1fr_0.9fr]`}>
+          <section className={`p-6 sm:p-8 ${panelBg}`}>
+            <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${mutedText}`}>
+              Vendor Support
             </p>
+            <h1 className="mt-3 max-w-xl text-3xl font-semibold leading-tight sm:text-4xl">
+              Need help with an order, checkout, or product?
+            </h1>
+            <p className={`mt-4 max-w-2xl text-sm leading-6 sm:text-base ${textColor}`}>
+              Send a message with your order number, product name, or the issue
+              you saw. The email template opens with the details we need to help
+              quickly.
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <a
               href={supportHref}
-              className={`inline-flex items-center justify-center rounded px-5 py-2 text-sm transition-colors ${buttonClasses}`}
+                className={`inline-flex items-center justify-center gap-2 rounded px-5 py-3 text-sm font-medium transition-colors ${buttonClasses}`}
             >
+                <FiMail className="text-base" aria-hidden="true" />
               Message Vendor
             </a>
+              <a
+                href={`mailto:${SUPPORT_EMAIL}`}
+                className={`inline-flex items-center justify-center rounded border px-5 py-3 text-sm font-medium transition-colors ${secondaryButtonClasses}`}
+              >
+                {SUPPORT_EMAIL}
+              </a>
+            </div>
+          </section>
+
+          <aside className="p-6 sm:p-8">
+            <div className={`flex gap-4 border-b pb-5 ${borderColor}`}>
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded ${iconPanel}`}>
+                <FiPackage aria-hidden="true" />
+              </span>
+              <div>
+                <p className="font-semibold">Shipping</p>
+                <p className={`mt-1 text-sm leading-6 ${textColor}`}>
+                  We ship across the United States. Free shipping is available
+                  on orders above $75, with standard delivery typically taking
+                  4-6 business days.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-5">
+              <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded ${iconPanel}`}>
+                <FiRefreshCw aria-hidden="true" />
+              </span>
+              <div>
+                <p className="font-semibold">Returns & Cancellations</p>
+                <p className={`mt-1 text-sm leading-6 ${textColor}`}>
+                  Returns are accepted within 7 days of delivery. Customers are
+                  responsible for return shipping, and orders can be canceled
+                  before shipping preparation.
+                </p>
+              </div>
+            </div>
+          </aside>
+        </div>
+
+        <div className={`mt-5 grid gap-3 text-sm ${textColor} sm:grid-cols-3`}>
+          <div className={`rounded border p-4 ${borderColor}`}>
+            <p className="font-semibold text-slate-900 dark:text-slate-100">Checkout help</p>
+            <p className="mt-1">Include any payment or cart error message.</p>
           </div>
-          <div className={`text-sm border rounded-lg p-4 w-full ${borderColor}`}>
-            <p className="font-semibold mb-2">Shipping & Return Summary</p>
-            <ul className="list-disc pl-5 space-y-1">
-              <li>We currently ship across the United States.</li>
-              <li>Free shipping is available on orders above $75.</li>
-              <li>Delivery timeline is typically 4-6 business days.</li>
-              <li>Returns are accepted within 7 days of delivery.</li>
-              <li>Customers are responsible for return shipping costs.</li>
-              <li>Orders can be canceled before shipping preparation.</li>
-            </ul>
+          <div className={`rounded border p-4 ${borderColor}`}>
+            <p className="font-semibold text-slate-900 dark:text-slate-100">Order questions</p>
+            <p className="mt-1">Share your order number if one is available.</p>
           </div>
-          {/* <p className="font-semibold text-lg">Careers at Clothify</p>
-          <p className="text-gray-500">Learn more about our teams and job openings</p>
-        <button className={`${theme === "light" ? "bg-black text-white hover:bg-white hover:text-black" : "bg-white text-black hover:bg-black hover:text-white"} border rounded px-8 py-4 text-sm transition-all duration-300`}>Explore Jobs</button> */}
+          <div className={`rounded border p-4 ${borderColor}`}>
+            <p className="font-semibold text-slate-900 dark:text-slate-100">Product concerns</p>
+            <p className="mt-1">Send the product name, size, or link.</p>
+          </div>
         </div>
       </div>
     </div>
