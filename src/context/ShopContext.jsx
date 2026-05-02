@@ -24,6 +24,7 @@ const ShopContextProvider = (props) => {
   const delivery_fee = 10;
   const [products, setProducts] = React.useState([]);
   const [productsLoading, setProductsLoading] = React.useState(false);
+  const [productsLoaded, setProductsLoaded] = React.useState(false);
   const [productsError, setProductsError] = React.useState("");
   const [search, setSearch] = React.useState("");
   const [showSearch, setShowSearch] = React.useState(false);
@@ -509,6 +510,7 @@ const ShopContextProvider = (props) => {
         .filter(Boolean);
       setProducts(normalized);
       setProductsError("");
+      setProductsLoaded(true);
     } catch (error) {
       console.error("Failed to fetch products", error);
       setProductsError("Failed to load products. Please try again later.");
@@ -523,6 +525,7 @@ const ShopContextProvider = (props) => {
 
   React.useEffect(() => {
     if (productsLoading) return;
+    if (!productsLoaded) return;
     if (!products.length && !Object.keys(cartItems).length) return;
 
     const removedIds = [];
@@ -540,7 +543,15 @@ const ShopContextProvider = (props) => {
       commitCartData(nextCart);
       toast.warn("Some items were removed because they are no longer available.");
     }
-  }, [cartItems, commitCartData, findProductById, isInactiveProduct, products, productsLoading]);
+  }, [
+    cartItems,
+    commitCartData,
+    findProductById,
+    isInactiveProduct,
+    products,
+    productsLoaded,
+    productsLoading,
+  ]);
 
   const isSoldOut = React.useCallback(
     (product) => {
