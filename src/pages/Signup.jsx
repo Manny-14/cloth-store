@@ -4,10 +4,8 @@ import { ShopContext } from '../context/ShopContext';
 import { FcGoogle } from "react-icons/fc";
 import { doCreateUserWithEmailAndPassword, doSignInWithGoogle } from '../../firebase/auth';
 import { toast } from 'react-toastify';
-import { supportTemplates } from '../helper/support';
 const Signup = () => {
 
-  const supportHref = supportTemplates.account();
     const [user, setUser] = useState({
         name: '',
         email: '',
@@ -132,12 +130,17 @@ const Signup = () => {
           </button>
         </div>
         <div className="w-full flex justify-between text-sm mt-[-10px]">
-            <a
-                href={supportHref}
+            <button
+                type="button"
+                onClick={() =>
+                    navigate('/forgot-password', {
+                        state: { email: user.email.trim() },
+                    })
+                }
                 className="cursor-pointer"
             >
-                Need account help?
-            </a>
+                Forgot password?
+            </button>
             <p
                 className="cursor-pointer"
                 onClick={(e) => {
