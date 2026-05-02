@@ -58,7 +58,7 @@ const Footer = () => {
       </div>
       <div className="flex justify-center items-center relative mt-8">
         <p className={`py-4 text-sm text-center ${bodyColor}`}>
-          © Copyrights 2026 @ DRESS-IT-UP - All Rights Reserved.
+          © 2026 Dress-It-Up. All rights reserved.
         </p>
       </div>
     </div>
