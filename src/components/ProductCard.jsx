@@ -9,6 +9,8 @@ const ProductCard = ({
   theme = "light",
   currency = "$",
   isSoldOut = false,
+  isArchived = false,
+  onRestore,
 }) => {
   const isSizeBasedProduct = product.hasSizes !== false;
   const imageBorder = theme === "dark" ? "border-slate-700" : "border-gray-200";
@@ -42,9 +44,13 @@ const ProductCard = ({
           <p className="text-sm text-gray-500 dark:text-gray-300 line-clamp-1">
             {product.category} &bull; {product.type}
           </p>
-          {isSoldOut && (
-            <p className="text-xs uppercase font-semibold text-red-500 mt-1">
-              Sold Out
+          {(isArchived || isSoldOut) && (
+            <p
+              className={`text-xs uppercase font-semibold mt-1 ${
+                isArchived ? "text-amber-600 dark:text-amber-400" : "text-red-500"
+              }`}
+            >
+              {isArchived ? "Archived" : "Sold Out"}
             </p>
           )}
         </div>
@@ -89,7 +95,15 @@ const ProductCard = ({
             Edit
           </button>
         )}
-        {onDelete && (
+        {isArchived && onRestore && (
+          <button
+            className="flex-1 sm:flex-none px-3 py-2 sm:py-1 rounded bg-green-600 text-white text-xs hover:bg-green-700"
+            onClick={() => onRestore(product)}
+          >
+            Restore
+          </button>
+        )}
+        {!isArchived && onDelete && (
           <button
             className="flex-1 sm:flex-none px-3 py-2 sm:py-1 rounded bg-red-500 text-white text-xs hover:bg-red-600"
             onClick={() => onDelete(product)}
@@ -109,6 +123,8 @@ ProductCard.propTypes = {
   theme: PropTypes.string,
   currency: PropTypes.string,
   isSoldOut: PropTypes.bool,
+  isArchived: PropTypes.bool,
+  onRestore: PropTypes.func,
 };
 
 export default ProductCard;
