@@ -29,14 +29,14 @@ const ProductCard = ({
           : "bg-slate-900 text-white border-slate-700"
       }`}
     >
-      <div className="flex gap-4 items-center">
+      <div className="flex gap-3 sm:gap-4 items-center min-w-0">
         <img
           src={product.images && product.images[0]}
           alt={product.productName}
-          className={`w-24 h-24 object-cover rounded-md border ${imageBorder}`}
+          className={`w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-md border ${imageBorder}`}
         />
-        <div className="flex-1">
-          <h3 className="font-semibold text-lg line-clamp-2">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-base sm:text-lg line-clamp-2">
             {product.productName}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-300 line-clamp-1">
@@ -80,10 +80,10 @@ const ProductCard = ({
         </div>
       </div>
       <p className="text-xs mt-2 line-clamp-2">{product.description}</p>
-      <div className="flex gap-2 mt-3">
+      <div className="flex flex-wrap gap-2 mt-3">
         {onEdit && (
           <button
-            className="px-3 py-1 rounded bg-yellow-400 text-black text-xs hover:bg-yellow-500"
+            className="flex-1 sm:flex-none px-3 py-2 sm:py-1 rounded bg-yellow-400 text-black text-xs hover:bg-yellow-500"
             onClick={() => onEdit(product)}
           >
             Edit
@@ -91,10 +91,10 @@ const ProductCard = ({
         )}
         {onDelete && (
           <button
-            className="px-3 py-1 rounded bg-red-500 text-white text-xs hover:bg-red-600"
+            className="flex-1 sm:flex-none px-3 py-2 sm:py-1 rounded bg-red-500 text-white text-xs hover:bg-red-600"
             onClick={() => onDelete(product)}
           >
-            Delete
+            Archive
           </button>
         )}
       </div>

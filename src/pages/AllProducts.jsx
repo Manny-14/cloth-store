@@ -65,9 +65,9 @@ const AllProducts = () => {
     setEditProductData(null);
   };
   return (
-  <div className="p-4 h-[85vh] relative transition-colors duration-300">
+  <div className="min-h-[85vh] px-2 py-4 sm:p-4 relative transition-colors duration-300">
       {/* Static header and controls */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between gap-3 mb-4">
         <div className="text-xl">
           <Title text1={"ALL"} text2={"Products"} />
         </div>
@@ -84,7 +84,7 @@ const AllProducts = () => {
         />
       )}
 
-      <div className="my-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="my-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 pb-24">
         {productsLoading ? (
           <div className={`col-span-full text-center ${mutedText} text-lg py-10`}>
             Loading...
@@ -111,7 +111,7 @@ const AllProducts = () => {
 
       {/* Fixed upload button */}
       <IoMdAddCircleOutline
-        className={`text-6xl fixed right-8 bottom-8 z-50 hover:scale-110 cursor-pointer ${
+        className={`text-5xl sm:text-6xl fixed right-5 sm:right-8 bottom-5 sm:bottom-8 z-50 hover:scale-110 cursor-pointer drop-shadow ${
           isDark ? "text-white" : "text-gray-900"
         }`}
         onClick={() => setOpenUploadProduct(true)}

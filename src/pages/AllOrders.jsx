@@ -143,7 +143,7 @@ const AllOrders = () => {
   };
 
   return (
-    <div className="p-4 flex flex-col gap-6">
+    <div className="px-2 py-4 sm:p-4 flex flex-col gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-xl">
           <Title text1="ALL" text2="ORDERS" />
@@ -155,7 +155,7 @@ const AllOrders = () => {
           <button
             type="button"
             onClick={fetchOrders}
-            className={`px-4 py-2 rounded text-sm border ${
+            className={`w-full sm:w-auto px-4 py-2 rounded text-sm border ${
               theme === "dark"
                 ? "border-gray-700 bg-gray-900 hover:bg-gray-800"
                 : "border-gray-300 bg-white hover:bg-gray-100"
@@ -166,8 +166,8 @@ const AllOrders = () => {
         </div>
       </div>
 
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-2 text-sm">
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div className="flex w-full sm:w-auto flex-col sm:flex-row sm:items-center gap-2 text-sm">
           <label htmlFor="statusFilter" className="font-semibold">
             Filter by status
           </label>
@@ -175,7 +175,7 @@ const AllOrders = () => {
             id="statusFilter"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className={`border rounded px-3 py-1 text-sm ${adminInputClasses}`}
+            className={`border rounded px-3 py-2 sm:py-1 text-sm ${adminInputClasses}`}
           >
             {statusOptions.map((option) => (
               <option key={option} value={option}>
@@ -204,7 +204,7 @@ const AllOrders = () => {
         {filteredOrders.map((order) => (
           <div
             key={order.id}
-            className={`p-4 border rounded-lg ${borderColor} ${cardBg} flex flex-col gap-3 min-w-0`}
+            className={`p-3 sm:p-4 border rounded-lg ${borderColor} ${cardBg} flex flex-col gap-3 min-w-0`}
           >
             <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
               <div className="min-w-0">
@@ -215,7 +215,7 @@ const AllOrders = () => {
                   })
                 </p>
               </div>
-              <div className="flex gap-3 flex-wrap text-sm">
+              <div className="flex gap-2 sm:gap-3 flex-wrap text-xs sm:text-sm">
                 {order.dispute?.status && (
                   <span
                     className={`px-3 py-1 rounded-full uppercase text-xs font-bold ${
@@ -244,12 +244,12 @@ const AllOrders = () => {
               {(order.items || []).map((item, index) => (
                 <div
                   key={`${order.id}-${item.productId}-${item.size}-${index}`}
-                  className={`flex items-center gap-3 border rounded p-2 ${borderColor}`}
+                  className={`flex items-center gap-2 sm:gap-3 border rounded p-2 ${borderColor}`}
                 >
                   <img
                     src={item.image || assets.hero_img}
                     alt={item.productName}
-                    className="w-12 h-12 object-cover rounded"
+                    className="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded"
                   />
                   <div className="flex-1 min-w-0 text-sm">
                     <p className={`font-medium break-words ${textColor}`}>{item.productName}</p>
@@ -257,7 +257,7 @@ const AllOrders = () => {
                       Qty: {item.quantity} · Size: {item.size}
                     </p>
                   </div>
-                  <p className={`text-sm font-medium shrink-0 ${textColor}`}>
+                  <p className={`text-xs sm:text-sm font-medium shrink-0 ${textColor}`}>
                     {currency}
                     {(
                       toNumber(item.pricePerUnit || item.price || 0) * toNumber(item.quantity)
@@ -336,7 +336,7 @@ const AllOrders = () => {
                 <select
                   value={getDraft(order).status}
                   onChange={(e) => setDraftField(order, "status", e.target.value)}
-                  className={`border rounded px-2 py-2 text-xs min-w-0 ${adminInputClasses}`}
+                  className={`border rounded px-3 py-2 text-sm md:text-xs min-w-0 ${adminInputClasses}`}
                 >
                   {statusOptions
                     .filter((option) => option !== "all")
@@ -351,28 +351,28 @@ const AllOrders = () => {
                   placeholder="Carrier"
                   value={getDraft(order).carrier}
                   onChange={(e) => setDraftField(order, "carrier", e.target.value)}
-                  className={`border rounded px-2 py-2 text-xs min-w-0 ${adminInputClasses}`}
+                  className={`border rounded px-3 py-2 text-sm md:text-xs min-w-0 ${adminInputClasses}`}
                 />
                 <input
                   type="text"
                   placeholder="Tracking Number"
                   value={getDraft(order).trackingNumber}
                   onChange={(e) => setDraftField(order, "trackingNumber", e.target.value)}
-                  className={`border rounded px-2 py-2 text-xs min-w-0 ${adminInputClasses}`}
+                  className={`border rounded px-3 py-2 text-sm md:text-xs min-w-0 ${adminInputClasses}`}
                 />
                 <input
                   type="text"
                   placeholder="Tracking URL"
                   value={getDraft(order).trackingUrl}
                   onChange={(e) => setDraftField(order, "trackingUrl", e.target.value)}
-                  className={`border rounded px-2 py-2 text-xs min-w-0 ${adminInputClasses}`}
+                  className={`border rounded px-3 py-2 text-sm md:text-xs min-w-0 ${adminInputClasses}`}
                 />
               </div>
               <div className="mt-2 flex justify-end">
                 <button
                   type="button"
                   onClick={() => saveDeliveryUpdate(order)}
-                  className="px-3 py-1 rounded text-xs bg-black text-white dark:bg-white dark:text-black"
+                  className="w-full sm:w-auto px-3 py-2 sm:py-1 rounded text-xs bg-black text-white dark:bg-white dark:text-black"
                 >
                   Save Delivery Update
                 </button>
