@@ -2,7 +2,7 @@
 
 Frontend: React + Vite + Firebase (Firestore/Auth)
 
-## Stripe checkout server (new)
+## Stripe checkout server
 
 Located in `server/` — a minimal Express server that creates Stripe Checkout Sessions and verifies webhooks. Use Stripe **test keys only** unless you intend to go live.
 
@@ -53,6 +53,8 @@ CLIENT_ORIGIN=http://localhost:5173,http://<TAILSCALE_IP>:5173
 VITE_STRIPE_SERVER_URL=http://<TAILSCALE_IP>:4242
 ```
 
+Do not put `VITE_STRIPE_SERVER_URL` in `server/.env`; Vite only reads it from the frontend env file.
+
 4. Run frontend with host binding:
 
 ```bash
@@ -71,7 +73,7 @@ http://<TAILSCALE_IP>:5173/Clothify-React/
 http://<TAILSCALE_IP>:4242/health
 ```
 
-4) Forward webhooks in test mode (optional but recommended)
+7. Forward webhooks in test mode (optional but recommended):
 
 ```bash
 stripe listen --forward-to http://localhost:4242/webhook
@@ -90,7 +92,7 @@ stripe trigger checkout.session.completed
 
 - Keep secret keys out of the frontend. Only the publishable key belongs client-side.
 - Restrict `ALLOWED_PRICE_IDS` so only your intended prices can be used.
-- For production, set strong CORS and host on a server you control; avoid exposing this server publicly with test keys.
+- For production, set `CLIENT_ORIGIN` to the real launch domain, host the server on a domain the frontend can reach, and avoid exposing this server publicly with test keys.
 - Admin delivery updates are now protected at `POST /admin/orders/:orderId/delivery` and require:
 	- Firebase ID token in `Authorization: Bearer <token>`
 	- user role `ADMIN` in Firestore `users/{uid}`
@@ -110,9 +112,12 @@ Go-live checklist:
 	- test IDs (`price_...`) are not reusable in live mode
 4. Set production frontend origin:
 	- `CLIENT_ORIGIN=https://your-domain.com`
-5. Keep `ALLOWED_PRICE_IDS` populated with your live price IDs
-6. Confirm success/cancel URLs resolve correctly for your deployed app
-7. Run one real low-value payment and confirm:
+5. Set frontend API URL:
+	- `VITE_STRIPE_SERVER_URL=https://your-server-domain.com`
+6. Add the launch domain in Firebase Authentication authorized domains
+7. Keep `ALLOWED_PRICE_IDS` populated with your live price IDs
+8. Confirm success/cancel URLs resolve correctly for your deployed app
+9. Run one real low-value payment and confirm:
 	- Checkout completes
 	- `/checkout/session` returns expected metadata
 	- order is created once (idempotency check)
