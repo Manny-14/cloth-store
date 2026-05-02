@@ -4,12 +4,54 @@ import {
     sendPasswordResetEmail,
     signInWithEmailAndPassword,
     signInWithPopup,
+    signInWithRedirect,
     signOut,
     updateProfile,
 } from "firebase/auth";
 import { auth, db } from "./firebase";
 import ROLE from "../src/helper/role";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+
+const createGoogleProvider = () => {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    return provider;
+};
+
+const shouldUseRedirectForGoogle = () => {
+    if (typeof window === "undefined" || typeof navigator === "undefined") {
+        return false;
+    }
+
+    const mobileUserAgent = /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent || "");
+    const touchDevice = Number(navigator.maxTouchPoints || 0) > 0;
+    const narrowViewport = window.matchMedia?.("(max-width: 768px)")?.matches;
+
+    return mobileUserAgent || (touchDevice && narrowViewport);
+};
+
+const createGoogleAuthError = (error, fallbackMessage, phase) => {
+    const authError = new Error(fallbackMessage);
+    authError.code = error?.code || "auth/unknown";
+    authError.provider = "google";
+    authError.phase = phase;
+    return authError;
+};
+
+export const ensureUserProfileDocument = async (user) => {
+    if (!user?.uid) return;
+
+    const userRef = doc(db, "users", user.uid);
+    const existingUser = await getDoc(userRef);
+
+    if (!existingUser.exists()) {
+        await setDoc(userRef, {
+            displayName: user.displayName || "",
+            email: user.email || "",
+            role: ROLE.GENERAL
+        });
+    }
+};
 
 export const doCreateUserWithEmailAndPassword = async (email, password, name) => { // custom function to create user with email and password
     try {
@@ -78,34 +120,55 @@ export const doSendPasswordResetEmail = async (email) => {
 
 export const doSignInWithGoogle = async () => {
     try {
-        const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: "select_account" });
+        const provider = createGoogleProvider();
+        const authMode = shouldUseRedirectForGoogle() ? "redirect" : "popup";
+
+        if (authMode === "redirect") {
+            await signInWithRedirect(auth, provider);
+            return { redirecting: true };
+        }
+
         const userCredential = await signInWithPopup(auth, provider);
         const user = userCredential.user;
-        const userRef = doc(db, "users", user.uid);
-        const existingUser = await getDoc(userRef);
-
-        if (!existingUser.exists()) {
-            await setDoc(userRef, {
-                displayName: user.displayName || "",
-                email: user.email || "",
-                role: ROLE.GENERAL
-            });
+        try {
+            await ensureUserProfileDocument(user);
+        } catch (profileError) {
+            throw createGoogleAuthError(
+                profileError,
+                "We signed you in with Google, but couldn't finish setting up your account. Please try again.",
+                "profile_document"
+            );
         }
 
         return user;
     } catch (error) {
         console.error("Error signing in with Google:", error.code, error.message);
         if(error.code === "auth/popup-closed-by-user" || error.code === "auth/cancelled-popup-request") {
-            throw new Error("Google sign-in was canceled.");
+            throw createGoogleAuthError(error, "Google sign-in was canceled.", "popup");
         }
         if(error.code === "auth/account-exists-with-different-credential") {
-            throw new Error("An account already exists with this email. Please sign in with the original method.");
+            throw createGoogleAuthError(
+                error,
+                "An account already exists with this email. Please sign in with the original method.",
+                shouldUseRedirectForGoogle() ? "redirect" : "popup"
+            );
+        }
+        if(error.code === "auth/unauthorized-domain") {
+            throw createGoogleAuthError(
+                error,
+                "Google sign-in is not enabled for this site address yet. Please try the launch domain or contact support.",
+                shouldUseRedirectForGoogle() ? "redirect" : "popup"
+            );
         }
         if(error.code === "auth/popup-blocked") {
-            throw new Error("Your browser blocked the Google sign-in popup. Please allow popups and try again.");
+            await signInWithRedirect(auth, createGoogleProvider());
+            return { redirecting: true };
         }
-        throw new Error("We couldn't sign you in with Google right now. Please try again.");
+        throw createGoogleAuthError(
+            error,
+            "We couldn't sign you in with Google right now. Please try again.",
+            shouldUseRedirectForGoogle() ? "redirect" : "popup"
+        );
     }
 }
 

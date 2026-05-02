@@ -3,6 +3,7 @@ import { ShopContext } from '../context/ShopContext';
 import { toast } from 'react-toastify';
 import { FcGoogle } from "react-icons/fc";
 import { doSignInWithEmailAndPassword, doSignInWithGoogle } from '../../firebase/auth';
+import { logGoogleSignInFailure } from '../helper/authLogging';
 
 const Login = () => {
   const [user, setUser] = useState({
@@ -46,7 +47,11 @@ const Login = () => {
 
   const onGoogleSignIn = async () => {
     try {
-      await doSignInWithGoogle();
+      const result = await doSignInWithGoogle();
+      if (result?.redirecting) {
+        toast.info("Redirecting to Google sign-in...");
+        return;
+      }
       toast.success("Signed in with Google.");
       navigate('/');
     } catch (error) {
@@ -54,6 +59,7 @@ const Login = () => {
         toast.info(error.message);
         return;
       }
+      logGoogleSignInFailure(error, { page: "login" });
       toast.error(error?.message || "We couldn't sign you in with Google right now.");
     }
   };
