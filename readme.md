@@ -160,6 +160,52 @@ Products are split into two inventory models:
 
 For towels and other measurement-specific products, keep them as non-sized products and include the specific measurement in the product title or description, for example `Embroidered Towel Set 27x54`. This avoids making dimensions look like apparel size choices while still showing customers the exact product size before purchase.
 
+## Launch data reset plan
+
+Use this when moving from test data to the launch catalog. Do not run delete scripts casually; confirm the target Firebase project and Stripe mode first.
+
+### Firestore collections in use
+
+- `products` — catalog, stock, archive status, image URLs, Stripe product/price IDs.
+- `orders` — customer orders, checkout/session metadata, delivery status, dispute metadata.
+- `users` — app user profiles and roles. Preserve this unless you are intentionally rebuilding accounts.
+- `adminLogs` — operational warnings/errors shown in the desktop Admin Logs page.
+
+Customer carts are stored in each browser's `localStorage` as `cartItems`, not in Firestore.
+
+### Usually clear before launch
+
+- Delete test `orders` so the admin order list starts clean.
+- Delete test `products` if replacing the full catalog.
+- Clear `adminLogs` after final smoke testing if you want a clean launch log.
+- Recreate or sync launch products using live Stripe product/price IDs if switching to live mode.
+
+### Usually preserve
+
+- Firebase Auth users you still need.
+- Firestore `users` documents for admin/vendor access.
+- Cloudinary images you intend to reuse for the launch catalog.
+- Firebase/Auth/Stripe configuration, except for replacing test Stripe keys and webhook secrets with live values.
+
+### Existing local reset scripts
+
+The local-only `server/scripts/` utilities expect `FIREBASE_SERVICE_ACCOUNT_KEY_PATH` in `server/.env` and require explicit confirmation flags.
+
+From `server/`:
+
+```bash
+CONFIRM_DELETE_ALL_ORDERS=true node scripts/deleteAllOrders.js
+CONFIRM_DELETE_ALL_PRODUCTS=true node scripts/deleteAllProducts.js
+```
+
+After deleting/recreating products, run the Stripe price sync only against the intended Stripe mode:
+
+```bash
+node scripts/syncStripePrices.js
+```
+
+For `adminLogs`, use the Firebase Console unless a dedicated delete script is added. Do not delete the `users` collection as part of the normal launch reset.
+
 ### Local-only utility scripts
 
 The `server/scripts/` directory (git-ignored) contains admin utilities:
