@@ -3,13 +3,313 @@ import { assets } from "../assets/assets";
 import CartTotal from "../components/CartTotal";
 import Title from "../components/Title";
 import { ShopContext } from "../context/ShopContext";
-const PlaceOrder = () => {
-  const { theme, navigate } = React.useContext(ShopContext);
-  const [method, setMethod] = React.useState("cod");
+import { useAuth } from "../context/authContext";
+import { toast } from "react-toastify";
+import { useLocation, useNavigate } from "react-router-dom";
+import { createStripeCheckoutSession } from "../helper/stripe";
+import { resolveCheckoutAuthToken } from "../helper/checkoutAuth";
+import { calculateShippingFee, estimateCartWeightKg } from "../helper/shipping";
+import { createAdminLog } from "../../firebase/logs/createAdminLog";
 
-  const handleSubmit = (event) => {
+const emptyForm = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  street: "",
+  city: "",
+  state: "",
+  zip: "",
+  country: "",
+};
+
+const splitDisplayName = (displayName = "") => {
+  if (!displayName) return { firstName: "", lastName: "" };
+  const parts = displayName.trim().split(" ").filter(Boolean);
+  if (parts.length === 0) return { firstName: "", lastName: "" };
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: "" };
+  }
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+};
+
+const toNumber = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const contactVendorMessage = "Please try again or message vendor from the Contact page.";
+
+const PlaceOrder = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const {
+    theme,
+    cartItems,
+    products,
+    getSizeQuantity,
+  } = React.useContext(ShopContext);
+  const { currentUser } = useAuth();
+  const inputClasses =
+    theme === "dark"
+      ? "bg-slate-900 text-white border-gray-700 placeholder:text-gray-400"
+      : "bg-white text-black border-gray-300 placeholder:text-gray-500";
+
+  const deliveryMethod = "standard_shipping";
+  const [formData, setFormData] = React.useState(() => {
+    const { firstName, lastName } = splitDisplayName(currentUser?.displayName);
+    return {
+      ...emptyForm,
+      firstName,
+      lastName,
+      email: currentUser?.email || "",
+      phone: currentUser?.phoneNumber || "",
+    };
+  });
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!currentUser) return;
+    const { firstName, lastName } = splitDisplayName(currentUser.displayName);
+    setFormData((prev) => ({
+      ...prev,
+      email: prev.email || currentUser.email || "",
+      phone: prev.phone || currentUser.phoneNumber || "",
+      firstName: prev.firstName || firstName,
+      lastName: prev.lastName || lastName,
+    }));
+  }, [currentUser]);
+
+  const cartLineItems = React.useMemo(() => {
+    return Object.entries(cartItems || {}).flatMap(([productId, sizes]) => {
+      const product = products.find(
+        (item) => item._id === productId || item.id === productId
+      );
+
+      return Object.entries(sizes || {})
+        .filter(([, quantity]) => quantity > 0)
+        .map(([size, quantity]) => ({
+          productId,
+          size,
+          quantity,
+          productRef: product,
+          productName: product?.name || product?.productName || "Product",
+          price: product?.price || product?.sellingPrice || 0,
+          image: product?.image?.[0] || assets.hero_img,
+        }));
+    });
+  }, [cartItems, products]);
+
+  const buyNowLineItem = React.useMemo(() => {
+    const buyNowItem = location.state?.buyNowItem;
+    if (!buyNowItem?.productId || !buyNowItem?.size) return null;
+
+    const product = products.find(
+      (item) => item._id === buyNowItem.productId || item.id === buyNowItem.productId
+    );
+
+    if (!product) return null;
+
+    const quantity = Math.max(1, toNumber(buyNowItem.quantity || 1));
+
+    return {
+      productId: buyNowItem.productId,
+      size: buyNowItem.size,
+      quantity,
+      productRef: product,
+      productName: product?.name || product?.productName || "Product",
+      price: product?.price || product?.sellingPrice || 0,
+      image: product?.image?.[0] || assets.hero_img,
+    };
+  }, [location.state, products]);
+
+  const activeLineItems = React.useMemo(() => {
+    return buyNowLineItem ? [buyNowLineItem] : cartLineItems;
+  }, [buyNowLineItem, cartLineItems]);
+
+  const isBuyNowFlow = Boolean(buyNowLineItem);
+
+  const subtotal = React.useMemo(() => {
+    return activeLineItems.reduce(
+      (sum, item) => sum + toNumber(item.price) * toNumber(item.quantity),
+      0
+    );
+  }, [activeLineItems]);
+
+  const estimatedWeightKg = React.useMemo(() => {
+    return estimateCartWeightKg(activeLineItems);
+  }, [activeLineItems]);
+
+  const shippingFee = React.useMemo(() => {
+    return calculateShippingFee({
+      subtotal,
+      deliveryMethod,
+      estimatedWeightKg,
+    });
+  }, [subtotal, deliveryMethod, estimatedWeightKg]);
+
+  const grandTotal = subtotal > 0 ? subtotal + shippingFee : 0;
+  const isCartEmpty = activeLineItems.length === 0;
+
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    navigate("/orders");
+    if (isCartEmpty) {
+      toast.error("Your cart is empty. Add an item before checkout.");
+      return;
+    }
+
+    if (!currentUser) {
+      toast.error("Please sign in to continue checkout.");
+      navigate("/login");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const validationErrors = [];
+      const orderItems = [];
+
+      activeLineItems.forEach((lineItem) => {
+        const product = lineItem.productRef;
+        if (!product) {
+          validationErrors.push(
+            `${lineItem.productName} is no longer available. Please remove it from your cart before checkout.`
+          );
+          return;
+        }
+
+        const availableStock = getSizeQuantity(product, lineItem.size);
+        if (lineItem.quantity > availableStock) {
+          const sizeLabel =
+            lineItem.size && lineItem.size !== "ONE_SIZE" ? ` (${lineItem.size})` : "";
+          validationErrors.push(
+            `${lineItem.productName}${sizeLabel} has only ${availableStock} available. Update the cart quantity before checkout.`
+          );
+          return;
+        }
+
+        orderItems.push({
+          productId: lineItem.productId,
+          productName: lineItem.productName,
+          size: lineItem.size,
+          quantity: lineItem.quantity,
+          pricePerUnit: toNumber(lineItem.price),
+          image: lineItem.image,
+        });
+      });
+
+      if (validationErrors.length) {
+        toast.error(validationErrors.join(" "));
+        setIsSubmitting(false);
+        return;
+      }
+
+      try {
+        const missingStripePriceNames = [];
+        const lineItemsWithPrice = orderItems
+          .map((item) => {
+            const product = activeLineItems.find((p) => p.productId === item.productId && p.size === item.size)?.productRef;
+            const priceId = product?.stripePriceId;
+            if (!priceId) {
+              missingStripePriceNames.push(item.productName || "Unnamed product");
+              return null;
+            }
+            return {
+              priceId,
+              quantity: item.quantity,
+              metadata: {
+                size: item.size,
+                firebaseProductId: item.productId,
+              },
+            };
+          })
+          .filter(Boolean);
+
+        if (lineItemsWithPrice.length !== orderItems.length) {
+          const uniqueNames = [...new Set(missingStripePriceNames)];
+          console.error("Missing Stripe prices for products:", uniqueNames);
+          createAdminLog({
+            event: "checkout.missing_stripe_price",
+            severity: "critical",
+            source: "client",
+            message: "Checkout blocked: missing Stripe price IDs.",
+            context: {
+              missingCount: uniqueNames.length,
+              checkoutMode: isBuyNowFlow ? "buy_now" : "cart",
+            },
+          });
+          toast.error(`Unable to place order right now. ${contactVendorMessage}`);
+          setIsSubmitting(false);
+          return;
+        }
+
+        const origin = window.location.origin;
+        const basePath = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+        const customerName = `${formData.firstName} ${formData.lastName}`.trim();
+        const authToken = await resolveCheckoutAuthToken(currentUser);
+
+        const { url } = await createStripeCheckoutSession({
+          lineItems: lineItemsWithPrice,
+          customerEmail: currentUser.email || formData.email,
+          successUrl: `${origin}${basePath}/#/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${origin}${basePath}/#/checkout/cancel`,
+          metadata: {
+            userId: currentUser.uid,
+            customerName,
+            checkoutMode: isBuyNowFlow ? "buy_now" : "cart",
+            deliveryMethod,
+            shippingStreet: formData.street,
+            shippingCity: formData.city,
+            shippingState: formData.state,
+            shippingZip: formData.zip,
+            shippingCountry: formData.country,
+            shippingPhone: formData.phone,
+          },
+        }, {
+          authToken,
+        });
+
+        if (url) {
+          window.location.href = url;
+          return;
+        }
+
+        toast.error(`Unable to start Stripe checkout. ${contactVendorMessage}`);
+      } catch (err) {
+        console.error("Stripe checkout failed", err);
+        createAdminLog({
+          event: "checkout.session_create_failed",
+          severity: "critical",
+          source: "client",
+          message: "Stripe checkout session failed to start.",
+          context: {
+            checkoutMode: isBuyNowFlow ? "buy_now" : "cart",
+          },
+        });
+        toast.error(err?.message || `Unable to start Stripe checkout. ${contactVendorMessage}`);
+      } finally {
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      console.error("Failed to place order", error);
+      createAdminLog({
+        event: "checkout.flow_failed",
+        severity: "critical",
+        source: "client",
+        message: "Checkout flow failed before redirect.",
+        context: {
+          checkoutMode: isBuyNowFlow ? "buy_now" : "cart",
+        },
+      });
+      toast.error(`Failed to place order. ${contactVendorMessage}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -24,128 +324,139 @@ const PlaceOrder = () => {
             <input
               type="text"
               placeholder="First Name"
-              className="w-full border rounded py-1.5 px-3.5 text-black"
+              name="firstName"
+              value={formData.firstName}
+              onChange={handleInputChange}
+              className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
               required
             />
             <input
               type="text"
               placeholder="Last Name"
-              className="w-full border rounded py-1.5 px-3.5 text-black"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleInputChange}
+              className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
               required
             />
           </div>
           <input
             type="email"
             placeholder="Email Address"
-            className="w-full border rounded py-1.5 px-3.5 text-black"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
             required
           />
           <input
             type="text"
             placeholder="Street"
-            className="w-full border rounded py-1.5 px-3.5 text-black"
+            name="street"
+            value={formData.street}
+            onChange={handleInputChange}
+            className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
             required
           />
           <div className="flex gap-3">
             <input
               type="text"
               placeholder="City"
-              className="w-full border rounded py-1.5 px-3.5 text-black"
+              name="city"
+              value={formData.city}
+              onChange={handleInputChange}
+              className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
               required
             />
             <input
               type="text"
               placeholder="State"
-              className="w-full border rounded py-1.5 px-3.5 text-black"
+              name="state"
+              value={formData.state}
+              onChange={handleInputChange}
+              className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
               required
             />
           </div>
           <div className="flex gap-3">
             <input
-              type="number"
+              type="text"
               placeholder="Zipcode"
-              className="w-full border rounded py-1.5 px-3.5 text-black"
+              name="zip"
+              value={formData.zip}
+              onChange={handleInputChange}
+              className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
               required
             />
             <input
               type="text"
               placeholder="Country"
-              className="w-full border rounded py-1.5 px-3.5 text-black"
+              name="country"
+              value={formData.country}
+              onChange={handleInputChange}
+              className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
               required
             />
           </div>
           <input
-            type="number"
+            type="tel"
             placeholder="Phone Number"
-            className="w-full border rounded py-1.5 px-3.5 text-black"
+            name="phone"
+            value={formData.phone}
+            onChange={handleInputChange}
+            className={`w-full border rounded py-1.5 px-3.5 ${inputClasses}`}
             required
           />
+
+          <div className="flex flex-col gap-2 mt-2">
+            <label className="text-sm font-medium">Delivery Option</label>
+            <div className="flex gap-3 flex-wrap">
+              <span className="px-3 py-2 rounded border text-sm border-green-500 bg-green-50 dark:bg-green-900/20">
+                Standard Shipping
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Standard shipping to your provided address.
+            </p>
+            {isBuyNowFlow && (
+              <p className="text-xs text-blue-600 dark:text-blue-400">
+                Buy Now mode: only the selected product will be checked out.
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Right Side */}
-        <div className="mt-8">
+        <div className="mt-8 w-full sm:w-auto">
           <div className="mt-8 min-w-80">
-            <CartTotal />
+            <CartTotal subtotal={subtotal} shippingFee={shippingFee} total={grandTotal} />
           </div>
           <div className="mt-8">
             <Title text1={"PAYMENT"} text2={"METHOD"} />
             <div className="flex gap-3 flex-col lg:flex-row">
-              <div
-                onClick={() => setMethod("stripe")}
-                className="flex items-center gap-3 border p-2 px-3 cursor-pointer rounded"
-              >
-                <p
-                  className={`min-w-3.5 h-3.5 border rounded-full ${
-                    method === "stripe" ? "bg-green-500" : ""
-                  }`}
-                ></p>
-                <img
-                  src={assets.stripe_logo}
-                  alt="stripe logo"
-                  className="h-5 mx-4"
-                />
-              </div>
-              <div
-                onClick={() => setMethod("razorpay")}
-                className="flex gap-3 flex-col lg:flex-row"
-              >
-                <div className="flex items-center gap-3 border p-2 px-3 cursor-pointer rounded">
-                  <p
-                    className={`min-w-3.5 h-3.5 border rounded-full ${
-                      method === "razorpay" ? "bg-green-500" : ""
-                    }`}
-                  ></p>
-                  <img
-                    src={assets.razorpay_logo}
-                    alt="razorpay logo"
-                    className="h-5 mx-4"
-                  />
-                </div>
-              </div>
-              <div
-                onClick={() => setMethod("cod")}
-                className="flex gap-3 flex-col lg:flex-row"
-              >
-                <div className="flex items-center gap-3 border p-2 px-3 cursor-pointer rounded">
-                  <p
-                    className={`min-w-3.5 h-3.5 border rounded-full ${
-                      method === "cod" ? "bg-green-500" : ""
-                    }`}
-                  ></p>
-                  <p className="text-sm font-medium mx-4">CASH ON DELIVERY</p>
-                </div>
+              <div className="flex items-center gap-3 border p-2 px-3 rounded bg-slate-50 dark:bg-slate-900">
+                <span className="min-w-3.5 h-3.5 border rounded-full bg-green-500" />
+                <img src={assets.stripe_logo} alt="stripe logo" className="h-5 mx-4" />
+                <p className="text-sm font-medium">Stripe Checkout</p>
               </div>
             </div>
-            <div className="w-full flex justify-center mt-8">
+            <div className="w-full flex flex-col items-center mt-8 gap-3">
+              {!currentUser && (
+                <p className="text-xs text-center text-red-500">
+                  Orders placed without an account cannot be tracked later. Consider
+                  logging in first.
+                </p>
+              )}
               <button
                 type="submit"
+                disabled={isSubmitting || isCartEmpty}
                 className={`${
                   theme === "light"
                     ? "bg-black text-white"
                     : "bg-white text-black"
-                } px-16 py-3 mt-4 text-sm rounded`}
+                } w-full sm:w-auto px-16 py-3.5 mt-4 text-sm rounded disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] transition-transform`}
               >
-                PLACE ORDER
+                {isSubmitting ? "PLACING ORDER..." : "PLACE ORDER"}
               </button>
             </div>
           </div>

@@ -8,12 +8,15 @@ const Title = ({ text1, text2 }) => {
     text1: PropTypes.node.isRequired,
     text2: PropTypes.node.isRequired,
   };
+  const helperColor = theme === "dark" ? "text-gray-400" : "text-gray-500";
+  const accentColor = theme === "dark" ? "text-white" : "text-gray-700";
+  const barColor = theme === "dark" ? "bg-gray-200" : "bg-gray-700";
   return (
     <div className="inline-flex gap-2 items-center mb-3">
-      <p className={`${theme === "light" ? "text-gray-500" : "text-gray-400"}`}>
-        {text1} <span className="text-gray-700 font-medium">{text2}</span>
+      <p className={helperColor}>
+        {text1} <span className={`${accentColor} font-medium`}>{text2}</span>
       </p>
-      <p className="w-8 sm:w-12 h-[0.063rem] sm:h-[0.125rem] bg-gray-700"></p>
+      <p className={`w-8 sm:w-12 h-[0.063rem] sm:h-[0.125rem] ${barColor}`}></p>
     </div>
   );
 };

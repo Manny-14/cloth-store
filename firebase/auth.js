@@ -17,10 +17,16 @@ export const doCreateUserWithEmailAndPassword = async (email, password, name) =>
         }); // create a new document in the users collection with the user's uid
     } catch (error) {
         if(error.code === "auth/email-already-in-use") {
-            throw new Error("User with this email already exists");
+            throw new Error("An account with this email already exists. Please sign in instead.");
+        }
+        if(error.code === "auth/weak-password") {
+            throw new Error("Please choose a stronger password with at least 6 characters.");
+        }
+        if(error.code === "auth/invalid-email") {
+            throw new Error("Please enter a valid email address.");
         }
         console.error("Error creating user:", error.code, error.message);
-        throw new Error('Error creating user');
+        throw new Error("We couldn't create your account right now. Please try again.");
     }
 };
 
@@ -32,9 +38,15 @@ export const doSignInWithEmailAndPassword = async (email, password) => {
     } catch (error) {
         console.error("Error signing in user:", error.code, error.message);
         if(error.code === "auth/user-not-found" || error.code === "auth/wrong-password" || error.code === "auth/invalid-credential"){
-            throw new Error("User email or password is incorrect");
+            throw new Error("Email or password is incorrect. Please check your details and try again.");
         }
-        throw new Error('Error signing in user');
+        if(error.code === "auth/invalid-email") {
+            throw new Error("Please enter a valid email address.");
+        }
+        if(error.code === "auth/too-many-requests") {
+            throw new Error("Too many sign-in attempts. Please wait a moment and try again.");
+        }
+        throw new Error("We couldn't sign you in right now. Please try again.");
     }
 }
 

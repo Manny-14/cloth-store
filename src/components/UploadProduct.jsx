@@ -5,21 +5,26 @@ import { ShopContext } from "../context/ShopContext";
 import { toast } from "react-toastify";
 import uploadImage from "../helper/cloudinary";
 import { uploadProduct } from "../../firebase/products/uploadProduct";
-import { productCategory, productType } from "../helper/dropdowns";
+import { productFilterOptions } from "../helper/dropdowns";
+import { createAdminLog } from "../../firebase/logs/createAdminLog";
 
 const UploadProduct = ({ closeUploadProduct }) => {
-  const { theme } = React.useContext(ShopContext);
+  const { theme, refreshProducts } = React.useContext(ShopContext);
+  const overlayActionClasses =
+    theme === "dark"
+      ? "bg-slate-900 text-slate-100 border border-slate-700"
+      : "bg-white text-black border border-slate-200";
   const [productData, setProductData] = useState({
     productName: "",
-    costPrice: "",
-    sellingPrice: "",
+    price: "",
+    hasSizes: true,
+    stockQuantity: "",
     smallQuantity: "",
     mediumQuantity: "",
     largeQuantity: "",
     xlQuantity: "",
     description: "",
-    category: "", // men, women, kids, etc.
-    type: "", // t-shirt, jeans, etc.
+    type: "",
     images: [],
   });
 
@@ -44,6 +49,12 @@ const UploadProduct = ({ closeUploadProduct }) => {
       setUploadedImages((prev) => [...prev, ...imageURLS]);
       console.log("Uploaded images", uploadedImages);
     } catch (error) {
+      createAdminLog({
+        event: "admin.product_image_upload_failed",
+        severity: "warning",
+        source: "admin",
+        message: "Admin image upload failed.",
+      });
       toast.error("Image Upload Failed");
     }
   };
@@ -65,15 +76,52 @@ const UploadProduct = ({ closeUploadProduct }) => {
           prev.map((img, i) => (i === index ? imageURL : img))
         );
       } catch (error) {
+        createAdminLog({
+          event: "admin.product_image_replace_failed",
+          severity: "warning",
+          source: "admin",
+          message: "Admin image replacement failed.",
+        });
         toast.error("Image replacement failed");
       }
     }
   };
 
+  const toNumber = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
   const handleOnSubmit = async (e) => {
     e.preventDefault();
 
-    const payload = { ...productData, images: [...uploadedImages] };
+    const payload = {
+      ...productData,
+      category: productData.type,
+      type: productData.type,
+      price: toNumber(productData.price),
+      hasSizes: Boolean(productData.hasSizes),
+      stockQuantity: Boolean(productData.hasSizes)
+        ? toNumber(productData.smallQuantity) +
+          toNumber(productData.mediumQuantity) +
+          toNumber(productData.largeQuantity) +
+          toNumber(productData.xlQuantity)
+        : toNumber(productData.stockQuantity),
+      smallQuantity: Boolean(productData.hasSizes)
+        ? toNumber(productData.smallQuantity)
+        : 0,
+      mediumQuantity: Boolean(productData.hasSizes)
+        ? toNumber(productData.mediumQuantity)
+        : 0,
+      largeQuantity: Boolean(productData.hasSizes)
+        ? toNumber(productData.largeQuantity)
+        : 0,
+      xlQuantity: Boolean(productData.hasSizes)
+        ? toNumber(productData.xlQuantity)
+        : 0,
+      sizes: Boolean(productData.hasSizes) ? ["S", "M", "L", "XL"] : ["ONE_SIZE"],
+      images: [...uploadedImages],
+    };
     console.log("payload", payload);
 
     try {
@@ -82,21 +130,31 @@ const UploadProduct = ({ closeUploadProduct }) => {
       // clear form state:
       setProductData({
         productName: "",
-        costPrice: "",
-        sellingPrice: "",
+        price: "",
+        hasSizes: true,
+        stockQuantity: "",
         smallQuantity: "",
         mediumQuantity: "",
         largeQuantity: "",
         xlQuantity: "",
         description: "",
-        category: "",
         type: "",
         images: [],
       });
       setUploadedImages([]);
+      refreshProducts();
       // close the modal:
       closeUploadProduct();
     } catch (error) {
+      createAdminLog({
+        event: "admin.product_upload_failed",
+        severity: "warning",
+        source: "admin",
+        message: "Admin product upload failed.",
+        context: {
+          productType: productData.type,
+        },
+      });
       toast.error("Failed to upload Product");
     }
   };
@@ -125,7 +183,7 @@ const UploadProduct = ({ closeUploadProduct }) => {
           <input
             type="text"
             id="productName"
-            placeholder="enter product name"
+            placeholder="enter product name (include size info if needed, e.g. 'Embroidered Towel Set 27x54')"
             name="productName"
             value={productData.productName}
             className={`${
@@ -135,130 +193,143 @@ const UploadProduct = ({ closeUploadProduct }) => {
             onChange={handleOnChange}
           />
 
-          <div className="grid grid-cols-2 grid-rows-1 gap-x-4">
-            <label htmlFor="costPrice" className="col-start-1 row-start-1">
-              Cost Price
-            </label>
-            <input
-              type="number"
-              id="costPrice"
-              placeholder="0"
-              min="0"
-              name="costPrice"
-              value={productData.costPrice}
-              className={`${
-                theme === "light" ? "bg-slate-50" : "bg-slate-900"
-              } border-dashed border-2 rounded p-2 col-start-1 row-start-2 no-arrows`}
-              onChange={handleOnChange}
-            />
+          <label htmlFor="price">Price:</label>
+          <input
+            type="number"
+            id="price"
+            placeholder="0.00"
+            min="0"
+            step="0.01"
+            inputMode="decimal"
+            name="price"
+            value={productData.price}
+            className={`${
+              theme === "light" ? "bg-slate-50" : "bg-slate-900"
+            } border-dashed border-2 rounded p-2 no-arrows`}
+            required
+            onChange={handleOnChange}
+          />
 
-            <label htmlFor="sellingPrice" className="col-start-2 row-start-1">
-              Selling Price
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="hasSizes"
+                checked={Boolean(productData.hasSizes)}
+                onChange={() =>
+                  setProductData((prev) => ({ ...prev, hasSizes: true, stockQuantity: "" }))
+                }
+              />
+              Product has sizes
             </label>
-            <input
-              type="number"
-              id="sellingPrice"
-              placeholder="0"
-              min="0"
-              name="sellingPrice"
-              value={productData.sellingPrice}
-              className={`${
-                theme === "light" ? "bg-slate-50" : "bg-slate-900"
-              } border-dashed border-2 rounded p-2 col-start-2 row-start-2 no-arrows`}
-              onChange={handleOnChange}
-            />
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="hasSizes"
+                checked={!Boolean(productData.hasSizes)}
+                onChange={() =>
+                  setProductData((prev) => ({
+                    ...prev,
+                    hasSizes: false,
+                    smallQuantity: "",
+                    mediumQuantity: "",
+                    largeQuantity: "",
+                    xlQuantity: "",
+                  }))
+                }
+              />
+              Product is non-sized
+            </label>
           </div>
 
-          <p className="text-center mt-1">Quantity Available</p>
-          <div className="flex gap-2 justify-between">
-            <div className="flex gap-1 items-center flex-1 min-w-0">
-              <label htmlFor="smallQuantity">S</label>
+          {Boolean(productData.hasSizes) ? (
+            <>
+              <p className="text-center mt-1">Quantity Available by Size</p>
+              <div className="flex gap-2 justify-between">
+                <div className="flex gap-1 items-center flex-1 min-w-0">
+                  <label htmlFor="smallQuantity">S</label>
+                  <input
+                    className={`${
+                      theme === "light" ? "bg-slate-50" : "bg-slate-900"
+                    } border-dashed border-2 rounded w-full min-w-0 p-2`}
+                    type="number"
+                    id="smallQuantity"
+                    placeholder="0"
+                    min="0"
+                    name="smallQuantity"
+                    value={productData.smallQuantity}
+                    onChange={handleOnChange}
+                  />
+                </div>
+                <div className="flex gap-1 items-center flex-1 min-w-0">
+                  <label htmlFor="mediumQuantity">M</label>
+                  <input
+                    className={`${
+                      theme === "light" ? "bg-slate-50" : "bg-slate-900"
+                    } border-dashed border-2 rounded w-full min-w-0 p-2`}
+                    type="number"
+                    id="mediumQuantity"
+                    placeholder="0"
+                    min="0"
+                    name="mediumQuantity"
+                    value={productData.mediumQuantity}
+                    onChange={handleOnChange}
+                  />
+                </div>
+                <div className="flex gap-1 items-center flex-1 min-w-0">
+                  <label htmlFor="largeQuantity">L</label>
+                  <input
+                    className={`${
+                      theme === "light" ? "bg-slate-50" : "bg-slate-900"
+                    } border-dashed border-2 rounded w-full min-w-0 p-2`}
+                    type="number"
+                    id="largeQuantity"
+                    placeholder="0"
+                    min="0"
+                    name="largeQuantity"
+                    value={productData.largeQuantity}
+                    onChange={handleOnChange}
+                  />
+                </div>
+                <div className="flex gap-1 items-center flex-1 min-w-0">
+                  <label htmlFor="xlQuantity">XL</label>
+                  <input
+                    className={`${
+                      theme === "light" ? "bg-slate-50" : "bg-slate-900"
+                    } border-dashed border-2 rounded w-full min-w-0 p-2`}
+                    type="number"
+                    id="xlQuantity"
+                    placeholder="0"
+                    min="0"
+                    name="xlQuantity"
+                    value={productData.xlQuantity}
+                    onChange={handleOnChange}
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 gap-2 mt-1">
+              <label htmlFor="stockQuantity">Stock Quantity</label>
               <input
-                className={`${
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
-                type="number"
-                id="smallQuantity"
-                placeholder="0"
-                min="0"
-                name="smallQuantity"
-                value={productData.smallQuantity}
-                onChange={handleOnChange}
-              />
-            </div>
-            <div className="flex gap-1 items-center flex-1 min-w-0">
-              <label htmlFor="mediumQuantity">M</label>
-              <input
-                className={`${
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
-                type="number"
-                id="mediumQuantity"
-                placeholder="0"
-                min="0"
-                name="mediumQuantity"
-                value={productData.mediumQuantity}
-                onChange={handleOnChange}
-              />
-            </div>
-            <div className="flex gap-1 items-center flex-1 min-w-0">
-              <label htmlFor="largeQuantity">L</label>
-              <input
-                className={`${
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
-                type="number"
-                id="largeQuantity"
-                placeholder="0"
-                min="0"
-                name="largeQuantity"
-                value={productData.largeQuantity}
-                onChange={handleOnChange}
-              />
-            </div>
-            <div className="flex gap-1 items-center flex-1 min-w-0">
-              <label htmlFor="xlQuantity">XL</label>
-              <input
-                className={`${
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
-                type="number"
-                id="xlQuantity"
-                placeholder="0"
-                min="0"
-                name="xlQuantity"
-                value={productData.xlQuantity}
-                onChange={handleOnChange}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-x-4">
-            <div className="flex flex-col">
-              <label htmlFor="category">Category</label>
-              <select
-                id="category"
-                name="category"
-                value={productData.category}
-                onChange={handleOnChange}
                 className={`${
                   theme === "light" ? "bg-slate-50" : "bg-slate-900"
                 } border-dashed border-2 rounded p-2`}
-                required
-              >
-                <option value="" disabled>
-                  Select Category
-                </option>
-                {productCategory.map((category) => (
-                  <option key={category.id} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
+                type="number"
+                id="stockQuantity"
+                placeholder="0"
+                min="0"
+                name="stockQuantity"
+                value={productData.stockQuantity}
+                onChange={handleOnChange}
+                required={!Boolean(productData.hasSizes)}
+              />
             </div>
+          )}
 
+          <div className="grid grid-cols-1 gap-x-4">
             <div className="flex flex-col">
-              <label htmlFor="type">Type</label>
+              <label htmlFor="type">Product Type</label>
               <select
                 id="type"
                 name="type"
@@ -270,11 +341,11 @@ const UploadProduct = ({ closeUploadProduct }) => {
                 required
               >
                 <option value="" disabled>
-                  Select Type
+                  Select Product Type
                 </option>
-                {productType.map((type) => (
-                  <option key={type.id} value={type.value}>
-                    {type.label}
+                {productFilterOptions.map((entry) => (
+                  <option key={entry.id} value={entry.value}>
+                    {entry.label}
                   </option>
                 ))}
               </select>
@@ -323,7 +394,7 @@ const UploadProduct = ({ closeUploadProduct }) => {
                         className="rounded-md object-cover w-20 h-20" // TODO: Since I'm using object cover, will put a view image in full screen feature
                       />
                       <div className="absolute top-0 rounded-md w-full h-full bg-slate-500 opacity-0 hover:opacity-70 flex flex-col gap-2 items-center justify-center">
-                        <label className="px-2 bg-white text-black rounded-full text-sm  cursor-pointer hover:scale-105">
+                        <label className={`px-2 rounded-full text-sm cursor-pointer hover:scale-105 ${overlayActionClasses}`}>
                           <input
                             type="file"
                             accept="image/*"
@@ -334,7 +405,7 @@ const UploadProduct = ({ closeUploadProduct }) => {
                         </label>
                         <button
                           type="button"
-                          className="px-2 bg-white text-black rounded-full text-sm cursor-pointer hover:scale-105"
+                          className={`px-2 rounded-full text-sm cursor-pointer hover:scale-105 ${overlayActionClasses}`}
                           onClick={() => handleDeleteImage(index)}
                         >
                           Remove

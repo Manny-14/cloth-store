@@ -1,13 +1,14 @@
-export const productCategory = [
-  { id: 1, label: "Male", value: "men" },
-  { id: 2, label: "Female", value: "female" },
-  { id: 3, label: "Unisex", value: "female" },
-  { id: 4, label: "Kids", value: "kids" },
+export const productType = [
+  { id: 1, label: "Necklace", value: "necklace" },
+  { id: 2, label: "Earrings", value: "earrings" },
+  { id: 3, label: "Bracelet", value: "bracelet" },
+  { id: 4, label: "Anklet", value: "anklet" },
+  { id: 5, label: "Embroidered T-shirt", value: "embroidered_tshirt" },
+  { id: 6, label: "Embroidered Towel Set", value: "embroidered_towel_set" },
+  { id: 7, label: "Handmade Accessory", value: "handmade_accessory" },
 ];
 
-export const productType = [
-  { id: 1, label: "Topwear", value: "topwear" },
-  { id: 2, label: "Bottomwear", value: "bottomwear" },
-  { id: 3, label: "Winterwear", value: "winterwear" },
-  { id: 4, label: "Other", value: "otherP" },
-];
+export const productFilterOptions = productType;
+
+// Legacy export retained for older references.
+export const productCategory = productType;

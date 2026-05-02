@@ -2,16 +2,19 @@ import React from 'react'
 import { useState } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import { doCreateUserWithEmailAndPassword } from '../../firebase/auth';
-import { useAuth } from '../context/authContext';
 import { toast } from 'react-toastify';
+import { supportTemplates } from '../helper/support';
 const Signup = () => {
 
+  const supportHref = supportTemplates.account();
     const [user, setUser] = useState({
         name: '',
         email: '',
         password: '',
         confirmPassword: ''
     });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const onChangeHandler = (e) => {
         const {name, value} = e.target;
@@ -24,18 +27,24 @@ const Signup = () => {
     };
 
     const { theme, navigate } = React.useContext(ShopContext);
+    const inputClasses =
+      theme === "dark"
+        ? "bg-slate-900 border-gray-700 text-white placeholder:text-gray-400"
+        : "bg-white border-gray-800 text-black placeholder:text-gray-500";
+    const toggleTextColor = theme === "dark" ? "text-gray-300" : "text-gray-600";
+    const dividerColor = theme === "dark" ? "bg-gray-200" : "bg-gray-800";
     
     const onSubmitHandler = async (e) => {
         e.preventDefault();
         try {
             if (user.password !== user.confirmPassword) {
-                throw new Error("Passwords do not match");
+                throw new Error("Passwords do not match. Please re-enter them.");
             }
             await doCreateUserWithEmailAndPassword(user.email, user.password, user.name);
-            toast.success("User created successfully");
+            toast.success("Account created successfully.");
             navigate('/');
         } catch (error) {
-            toast.error(error.message);
+            toast.error(error?.message || "We couldn't create your account right now. Please try again.");
         }
     };
 
@@ -47,13 +56,13 @@ const Signup = () => {
       >
         <div className="inline-flex items-center gap-2 mb-2 mt-10">
           <p className="prata-regular text-lg">Sign up</p>
-          <hr className="border-none h-[1.5px] w-8 bg-gray-800" />
+          <hr className={`border-none h-[1.5px] w-8 ${dividerColor}`} />
         </div>
         <input
             name='name'
             value={user.name}
             type="text"
-            className="w-full px-3 py-2 border border-gray-800 text-black"
+            className={`w-full px-3 py-2 border ${inputClasses}`}
             placeholder="Full Name"
             onChange={onChangeHandler}
             required
@@ -62,31 +71,54 @@ const Signup = () => {
             name='email'
             value={user.email}
             type="email"
-            className="w-full px-3 py-2 border border-gray-800 text-black"
+            className={`w-full px-3 py-2 border ${inputClasses}`}
             placeholder="Email Address"
             onChange={onChangeHandler}
             required
         />
-        <input
-          name='password'  
-          type="password"
-          value={user.password}
-          className="w-full px-3 py-2 border border-gray-800 text-black"
-          placeholder="Password"
-          onChange={onChangeHandler}
-          required
-        />
-        <input
-          name='confirmPassword'
-          type="password"
-          value={user.confirmPassword}
-          className="w-full px-3 py-2 border border-gray-800 text-black"
-          placeholder="Confirm Password"
-          onChange={onChangeHandler}
-          required
-        />
+        <div className="w-full relative">
+          <input
+            name='password'  
+            type={showPassword ? "text" : "password"}
+            value={user.password}
+            className={`w-full px-3 py-2 border pr-12 ${inputClasses}`}
+            placeholder="Password"
+            onChange={onChangeHandler}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${toggleTextColor}`}
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </div>
+        <div className="w-full relative">
+          <input
+            name='confirmPassword'
+            type={showConfirmPassword ? "text" : "password"}
+            value={user.confirmPassword}
+            className={`w-full px-3 py-2 border pr-12 ${inputClasses}`}
+            placeholder="Confirm Password"
+            onChange={onChangeHandler}
+            required
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword((prev) => !prev)}
+            className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs ${toggleTextColor}`}
+          >
+            {showConfirmPassword ? "Hide" : "Show"}
+          </button>
+        </div>
         <div className="w-full flex justify-between text-sm mt-[-10px]">
-            <p className="cursor-pointer">Forgot your password?</p>
+            <a
+                href={supportHref}
+                className="cursor-pointer"
+            >
+                Need account help?
+            </a>
             <p
                 className="cursor-pointer"
                 onClick={(e) => {
@@ -102,7 +134,7 @@ const Signup = () => {
             theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
           } font-light px-8 py-2 mt-4 rounded`}
         >
-          'Sign Up'
+          Sign Up
         </button>
       </form>
     </div>

@@ -5,25 +5,38 @@ import { ShopContext } from "../context/ShopContext";
 import { toast } from "react-toastify";
 import uploadImage from "../helper/cloudinary";
 import { editProduct } from "../../firebase/products/editProduct";
-import { productCategory, productType } from "../helper/dropdowns";
+import { productFilterOptions } from "../helper/dropdowns";
+import { hasSizeVariants } from "../helper/inventory";
+import { createAdminLog } from "../../firebase/logs/createAdminLog";
 
 const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
-  const { theme } = React.useContext(ShopContext);
+  const { theme, refreshProducts } = React.useContext(ShopContext);
+  const initialHasSizes = hasSizeVariants(product);
   const [productData, setProductData] = useState({
     productName: product.productName || "",
-    costPrice: product.costPrice || "",
-    sellingPrice: product.sellingPrice || "",
+    price: product.price ?? product.sellingPrice ?? "",
+    hasSizes: initialHasSizes,
+    stockQuantity: product.stockQuantity || "",
     smallQuantity: product.smallQuantity || "",
     mediumQuantity: product.mediumQuantity || "",
     largeQuantity: product.largeQuantity || "",
     xlQuantity: product.xlQuantity || "",
     description: product.description || "",
-    category: product.category || "",
-    type: product.type || "",
+    type: product.type || product.category || "",
     images: product.images ? [...product.images] : [],
   });
 
   const [uploadedImages, setUploadedImages] = useState(product.images ? [...product.images] : []);
+
+  const overlayBg =
+    theme === "light" ? "bg-slate-200 bg-opacity-50" : "bg-slate-800 bg-opacity-70";
+  const modalBg = theme === "light" ? "bg-white" : "bg-black";
+  const inputBg = theme === "light" ? "bg-slate-50" : "bg-slate-900";
+  const dropzoneBg = theme === "light" ? "bg-slate-100" : "bg-slate-800";
+  const overlayActionClasses =
+    theme === "dark"
+      ? "bg-slate-900 text-slate-100 border border-slate-700"
+      : "bg-white text-black border border-slate-200";
 
   const handleOnChange = (e) => {
     setProductData({ ...productData, [e.target.name]: e.target.value });
@@ -63,31 +76,60 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
     }
   };
 
+  const toNumber = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
   const handleOnSubmit = async (e) => {
     e.preventDefault();
-    const payload = { ...productData, images: [...uploadedImages] };
+    const hasSizes = Boolean(productData.hasSizes);
+    const payload = {
+      ...productData,
+      category: productData.type,
+      type: productData.type,
+      price: toNumber(productData.price),
+      hasSizes,
+      stockQuantity: hasSizes
+        ? toNumber(productData.smallQuantity) +
+          toNumber(productData.mediumQuantity) +
+          toNumber(productData.largeQuantity) +
+          toNumber(productData.xlQuantity)
+        : toNumber(productData.stockQuantity),
+      smallQuantity: hasSizes ? toNumber(productData.smallQuantity) : 0,
+      mediumQuantity: hasSizes ? toNumber(productData.mediumQuantity) : 0,
+      largeQuantity: hasSizes ? toNumber(productData.largeQuantity) : 0,
+      xlQuantity: hasSizes ? toNumber(productData.xlQuantity) : 0,
+      sizes: hasSizes ? ["S", "M", "L", "XL"] : ["ONE_SIZE"],
+      images: [...uploadedImages],
+    };
     try {
       await editProduct(product.id || product._id, payload);
       toast.success("Product Updated Successfully");
       if (onProductUpdated) onProductUpdated();
+      refreshProducts();
       closeEditProduct();
     } catch (error) {
+      createAdminLog({
+        event: "admin.product_update_failed",
+        severity: "warning",
+        source: "admin",
+        message: "Admin product update failed.",
+        context: {
+          productId: product.id || product._id,
+          productType: productData.type,
+        },
+      });
       toast.error("Failed to update Product");
     }
   };
 
   return (
     <div
-      className={`fixed w-full h-full top-0 left-0 right-0 bottom-0 flex justify-center items-center z-50 ${
-        theme === "light"
-          ? "bg-slate-200 bg-opacity-50"
-          : "bg-slate-800 bg-opacity-70"
-      }`}
+      className={`fixed w-full h-full top-0 left-0 right-0 bottom-0 flex justify-center items-center z-50 ${overlayBg}`}
     >
       <div
-        className={`p-5 w-full h-full max-w-2xl max-h-[85%] rounded shadow-sm overflow-y-auto ${
-          theme === "light" ? "bg-white" : "bg-black"
-        }`}
+        className={`p-5 w-full h-full max-w-2xl max-h-[85%] rounded shadow-sm overflow-y-auto ${modalBg}`}
       >
         <div className="pb-5 flex justify-between items-center">
           <h2 className="font-bold text-2xl">Edit Product</h2>
@@ -101,151 +143,150 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
           <input
             type="text"
             id="productName"
-            placeholder="enter product name"
+            placeholder="enter product name (include size info if needed, e.g. 'Embroidered Towel Set 27x54')"
             name="productName"
             value={productData.productName}
-            className={`$ {
-              theme === "light" ? "bg-slate-50" : "bg-slate-900"
-            } border-dashed border-2 rounded p-2`}
+            className={`${inputBg} border-dashed border-2 rounded p-2`}
             required
             onChange={handleOnChange}
           />
-          <div className="grid grid-cols-2 grid-rows-1 gap-x-4">
-            <label htmlFor="costPrice" className="col-start-1 row-start-1">
-              Cost Price
+          <label htmlFor="price">Price:</label>
+          <input
+            type="number"
+            id="price"
+            placeholder="0.00"
+            min="0"
+            step="0.01"
+            inputMode="decimal"
+            name="price"
+            value={productData.price}
+            className={`${inputBg} border-dashed border-2 rounded p-2 no-arrows`}
+            required
+            onChange={handleOnChange}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="hasSizes"
+                checked={Boolean(productData.hasSizes)}
+                onChange={() =>
+                  setProductData((prev) => ({ ...prev, hasSizes: true, stockQuantity: "" }))
+                }
+              />
+              Product has sizes
             </label>
-            <input
-              type="number"
-              id="costPrice"
-              placeholder="0"
-              min="0"
-              name="costPrice"
-              value={productData.costPrice}
-              className={`$ {
-                theme === "light" ? "bg-slate-50" : "bg-slate-900"
-              } border-dashed border-2 rounded p-2 col-start-1 row-start-2 no-arrows`}
-              onChange={handleOnChange}
-            />
-            <label htmlFor="sellingPrice" className="col-start-2 row-start-1">
-              Selling Price
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="hasSizes"
+                checked={!Boolean(productData.hasSizes)}
+                onChange={() =>
+                  setProductData((prev) => ({
+                    ...prev,
+                    hasSizes: false,
+                    smallQuantity: "",
+                    mediumQuantity: "",
+                    largeQuantity: "",
+                    xlQuantity: "",
+                  }))
+                }
+              />
+              Product is non-sized
             </label>
-            <input
-              type="number"
-              id="sellingPrice"
-              placeholder="0"
-              min="0"
-              name="sellingPrice"
-              value={productData.sellingPrice}
-              className={`$ {
-                theme === "light" ? "bg-slate-50" : "bg-slate-900"
-              } border-dashed border-2 rounded p-2 col-start-2 row-start-2 no-arrows`}
-              onChange={handleOnChange}
-            />
           </div>
-          <p className="text-center mt-1">Quantity Available</p>
-          <div className="flex gap-2 justify-between">
-            <div className="flex gap-1 items-center flex-1 min-w-0">
-              <label htmlFor="smallQuantity">S</label>
+
+          {Boolean(productData.hasSizes) ? (
+            <>
+              <p className="text-center mt-1">Quantity Available by Size</p>
+              <div className="flex gap-2 justify-between">
+                <div className="flex gap-1 items-center flex-1 min-w-0">
+                  <label htmlFor="smallQuantity">S</label>
+                  <input
+                    className={`${inputBg} border-dashed border-2 rounded w-full min-w-0 p-2`}
+                    type="number"
+                    id="smallQuantity"
+                    placeholder="0"
+                    min="0"
+                    name="smallQuantity"
+                    value={productData.smallQuantity}
+                    onChange={handleOnChange}
+                  />
+                </div>
+                <div className="flex gap-1 items-center flex-1 min-w-0">
+                  <label htmlFor="mediumQuantity">M</label>
+                  <input
+                    className={`${inputBg} border-dashed border-2 rounded w-full min-w-0 p-2`}
+                    type="number"
+                    id="mediumQuantity"
+                    placeholder="0"
+                    min="0"
+                    name="mediumQuantity"
+                    value={productData.mediumQuantity}
+                    onChange={handleOnChange}
+                  />
+                </div>
+                <div className="flex gap-1 items-center flex-1 min-w-0">
+                  <label htmlFor="largeQuantity">L</label>
+                  <input
+                    className={`${inputBg} border-dashed border-2 rounded w-full min-w-0 p-2`}
+                    type="number"
+                    id="largeQuantity"
+                    placeholder="0"
+                    min="0"
+                    name="largeQuantity"
+                    value={productData.largeQuantity}
+                    onChange={handleOnChange}
+                  />
+                </div>
+                <div className="flex gap-1 items-center flex-1 min-w-0">
+                  <label htmlFor="xlQuantity">XL</label>
+                  <input
+                    className={`${inputBg} border-dashed border-2 rounded w-full min-w-0 p-2`}
+                    type="number"
+                    id="xlQuantity"
+                    placeholder="0"
+                    min="0"
+                    name="xlQuantity"
+                    value={productData.xlQuantity}
+                    onChange={handleOnChange}
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 gap-2 mt-1">
+              <label htmlFor="stockQuantity">Stock Quantity</label>
               <input
-                className={`$ {
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
+                className={`${inputBg} border-dashed border-2 rounded p-2`}
                 type="number"
-                id="smallQuantity"
+                id="stockQuantity"
                 placeholder="0"
                 min="0"
-                name="smallQuantity"
-                value={productData.smallQuantity}
+                name="stockQuantity"
+                value={productData.stockQuantity}
                 onChange={handleOnChange}
+                required={!Boolean(productData.hasSizes)}
               />
             </div>
-            <div className="flex gap-1 items-center flex-1 min-w-0">
-              <label htmlFor="mediumQuantity">M</label>
-              <input
-                className={`$ {
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
-                type="number"
-                id="mediumQuantity"
-                placeholder="0"
-                min="0"
-                name="mediumQuantity"
-                value={productData.mediumQuantity}
-                onChange={handleOnChange}
-              />
-            </div>
-            <div className="flex gap-1 items-center flex-1 min-w-0">
-              <label htmlFor="largeQuantity">L</label>
-              <input
-                className={`$ {
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
-                type="number"
-                id="largeQuantity"
-                placeholder="0"
-                min="0"
-                name="largeQuantity"
-                value={productData.largeQuantity}
-                onChange={handleOnChange}
-              />
-            </div>
-            <div className="flex gap-1 items-center flex-1 min-w-0">
-              <label htmlFor="xlQuantity">XL</label>
-              <input
-                className={`$ {
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded w-full min-w-0 p-2`}
-                type="number"
-                id="xlQuantity"
-                placeholder="0"
-                min="0"
-                name="xlQuantity"
-                value={productData.xlQuantity}
-                onChange={handleOnChange}
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-x-4">
+          )}
+          <div className="grid grid-cols-1 gap-x-4">
             <div className="flex flex-col">
-              <label htmlFor="category">Category</label>
-              <select
-                id="category"
-                name="category"
-                value={productData.category}
-                onChange={handleOnChange}
-                className={`$ {
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded p-2`}
-                required
-              >
-                <option value="" disabled>
-                  Select Category
-                </option>
-                {productCategory.map((category) => (
-                  <option key={category.id} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col">
-              <label htmlFor="type">Type</label>
+              <label htmlFor="type">Product Type</label>
               <select
                 id="type"
                 name="type"
                 value={productData.type}
                 onChange={handleOnChange}
-                className={`$ {
-                  theme === "light" ? "bg-slate-50" : "bg-slate-900"
-                } border-dashed border-2 rounded p-2`}
+                className={`${inputBg} border-dashed border-2 rounded p-2`}
                 required
               >
                 <option value="" disabled>
-                  Select Type
+                  Select Product Type
                 </option>
-                {productType.map((type) => (
-                  <option key={type.id} value={type.value}>
-                    {type.label}
+                {productFilterOptions.map((entry) => (
+                  <option key={entry.id} value={entry.value}>
+                    {entry.label}
                   </option>
                 ))}
               </select>
@@ -253,14 +294,10 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
           </div>
           <label>Product Images</label>
           <div
-            className={`$ {
-              theme === "light" ? "bg-slate-50" : "bg-slate-900"
-            } border-2 border-dashed p-4 flex justify-normal gap-5 items-center`}
+            className={`${inputBg} border-2 border-dashed p-4 flex justify-normal gap-5 items-center`}
           >
             <div
-              className={`$ {
-                theme === "light" ? "bg-slate-100" : "bg-slate-800"
-              } px-3 py-2 rounded-md border-2 flex-col items-center justify-center`}
+              className={`${dropzoneBg} px-3 py-2 rounded-md border-2 flex-col items-center justify-center`}
             >
               <label htmlFor="productImage" className="cursor-pointer">
                 <input
@@ -293,7 +330,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
                         className="rounded-md object-cover w-20 h-20"
                       />
                       <div className="absolute top-0 rounded-md w-full h-full bg-slate-500 opacity-0 hover:opacity-70 flex flex-col gap-2 items-center justify-center">
-                        <label className="px-2 bg-white text-black rounded-full text-sm  cursor-pointer hover:scale-105">
+                        <label className={`px-2 rounded-full text-sm cursor-pointer hover:scale-105 ${overlayActionClasses}`}>
                           <input
                             type="file"
                             accept="image/*"
@@ -304,7 +341,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
                         </label>
                         <button
                           type="button"
-                          className="px-2 bg-white text-black rounded-full text-sm cursor-pointer hover:scale-105"
+                          className={`px-2 rounded-full text-sm cursor-pointer hover:scale-105 ${overlayActionClasses}`}
                           onClick={() => handleDeleteImage(index)}
                         >
                           Remove
@@ -326,9 +363,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
             placeholder="enter product description"
             name="description"
             value={productData.description}
-            className={`$ {
-              theme === "light" ? "bg-slate-50" : "bg-slate-900"
-            } border-dashed border-2 rounded p-2 resize-none h-32`}
+            className={`${inputBg} border-dashed border-2 rounded p-2 resize-none h-32`}
             required
             onChange={handleOnChange}
           />
