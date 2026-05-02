@@ -19,6 +19,7 @@ const SIZE_FIELD_MAP = {
 
 export const DEFAULT_SIZE_ORDER = ["XS", "S", "M", "L", "XL", "XXL"];
 export const NON_SIZED_KEY = "ONE_SIZE";
+export const LOW_STOCK_THRESHOLD = 5;
 
 export const normalizeSizeLabel = (size) => {
   if (!size && size !== 0) return "";
@@ -80,4 +81,9 @@ export const getTotalStockQuantity = (product) => {
   return toNumber(
     product.stockQuantity ?? product.totalQuantity ?? product.quantity ?? 0
   );
+};
+
+export const isLowStock = (quantity, threshold = LOW_STOCK_THRESHOLD) => {
+  const parsedQuantity = toNumber(quantity);
+  return parsedQuantity > 0 && parsedQuantity <= threshold;
 };

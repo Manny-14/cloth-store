@@ -5,7 +5,7 @@ import { assets } from "../assets/assets";
 import RelatedProducts from "../components/RelatedProducts";
 import { getProduct } from "../../firebase/products/getProduct";
 import { toast } from "react-toastify";
-import { NON_SIZED_KEY, hasSizeVariants } from "../helper/inventory";
+import { NON_SIZED_KEY, hasSizeVariants, isLowStock } from "../helper/inventory";
 import { supportTemplates } from "../helper/support";
 const Product = () => {
   const { productId } = useParams();
@@ -128,6 +128,7 @@ const Product = () => {
     if (!productData || !size) return 0;
     return getSizeQuantity(productData, size);
   }, [getSizeQuantity, productData, size]);
+  const selectedSizeIsLowStock = isLowStock(selectedSizeStock);
 
   React.useEffect(() => {
     if (!productData) return;
@@ -324,24 +325,36 @@ const Product = () => {
                 {size && (
                   <p
                     className={`text-sm ${
-                      selectedSizeStock > 0 ? "text-green-600" : "text-red-500"
+                      selectedSizeStock > 0
+                        ? selectedSizeIsLowStock
+                          ? "text-amber-600"
+                          : "text-green-600"
+                        : "text-red-500"
                     }`}
                   >
-                    {selectedSizeStock > 0
-                      ? `${selectedSizeStock} in stock`
-                      : "Selected size is sold out"}
+                    {selectedSizeStock <= 0
+                      ? "Selected size is sold out"
+                      : selectedSizeIsLowStock
+                      ? `Only ${selectedSizeStock} left`
+                      : "In stock"}
                   </p>
                 )}
               </>
             ) : (
               <p
                 className={`text-sm ${
-                  selectedSizeStock > 0 ? "text-green-600" : "text-red-500"
+                  selectedSizeStock > 0
+                    ? selectedSizeIsLowStock
+                      ? "text-amber-600"
+                      : "text-green-600"
+                    : "text-red-500"
                 }`}
               >
-                {selectedSizeStock > 0
-                  ? `${selectedSizeStock} available`
-                  : "This product is sold out"}
+                {selectedSizeStock <= 0
+                  ? "This product is sold out"
+                  : selectedSizeIsLowStock
+                  ? `Only ${selectedSizeStock} left`
+                  : "In stock"}
               </p>
             )}
           </div>

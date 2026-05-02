@@ -3,6 +3,7 @@ import {
   NON_SIZED_KEY,
   getTotalStockQuantity,
   hasSizeVariants,
+  isLowStock,
   normalizeSizeLabel,
   resolveSizeFieldKey,
 } from "../inventory";
@@ -50,5 +51,12 @@ describe("inventory size mapping", () => {
         stockQuantity: 17,
       })
     ).toBe(17);
+  });
+
+  it("detects low stock without counting sold-out items", () => {
+    expect(isLowStock(0)).toBe(false);
+    expect(isLowStock(1)).toBe(true);
+    expect(isLowStock(5)).toBe(true);
+    expect(isLowStock(6)).toBe(false);
   });
 });

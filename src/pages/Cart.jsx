@@ -4,6 +4,7 @@ import Title from "../components/Title";
 import { assets } from "../assets/assets";
 import CartTotal from "../components/CartTotal";
 import { calculateShippingFee, estimateCartWeightKg } from "../helper/shipping";
+import { isLowStock } from "../helper/inventory";
 
 const Cart = () => {
   const {
@@ -104,6 +105,7 @@ const Cart = () => {
             const isSizeBasedProduct = productData.hasSizes !== false;
             const sizeStock = getSizeQuantity(productData, item.size);
             const hitStockLimit = item.quantity >= sizeStock && sizeStock > 0;
+            const itemIsLowStock = isLowStock(sizeStock);
             const sizeOptions = getAvailableSizes(productData, {
               includeCurrentSize: item.size,
             });
@@ -179,15 +181,19 @@ const Cart = () => {
                       }}
                       className={`border w-12 px-2 py-1.5 text-center text-sm rounded ${quantityInputClasses}`}
                     />
-                    {sizeStock > 0 && (
+                    {sizeStock > 0 && (hitStockLimit || itemIsLowStock) && (
                       <p
                         className={`text-[10px] mt-1 ${
-                          hitStockLimit ? "text-red-500" : "text-slate-500"
+                          hitStockLimit || itemIsLowStock
+                            ? "text-amber-600"
+                            : "text-slate-500"
                         }`}
                       >
-                        {hitStockLimit
-                          ? `Max ${sizeStock} in stock`
-                          : `In stock: ${sizeStock}`}
+                        {itemIsLowStock
+                          ? hitStockLimit
+                            ? `Max ${sizeStock} in stock`
+                            : `Only ${sizeStock} left`
+                          : "Stock limit reached"}
                       </p>
                     )}
                   </div>
