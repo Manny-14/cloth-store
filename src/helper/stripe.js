@@ -38,7 +38,7 @@ export async function ensureStripePriceForProduct({
     productId,
     productName: productData?.productName || productData?.name || "",
     description: productData?.description || productData?.productDescription || "",
-    sellingPrice: productData?.sellingPrice ?? productData?.price ?? 0,
+    price: productData?.price ?? productData?.sellingPrice ?? 0,
     images: Array.isArray(productData?.images)
       ? productData.images
       : Array.isArray(productData?.image)

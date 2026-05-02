@@ -14,8 +14,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
   const initialHasSizes = hasSizeVariants(product);
   const [productData, setProductData] = useState({
     productName: product.productName || "",
-    costPrice: product.costPrice || "",
-    sellingPrice: product.sellingPrice || "",
+    price: product.price ?? product.sellingPrice ?? "",
     hasSizes: initialHasSizes,
     stockQuantity: product.stockQuantity || "",
     smallQuantity: product.smallQuantity || "",
@@ -89,8 +88,7 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
       ...productData,
       category: productData.type,
       type: productData.type,
-      costPrice: toNumber(productData.costPrice),
-      sellingPrice: toNumber(productData.sellingPrice),
+      price: toNumber(productData.price),
       hasSizes,
       stockQuantity: hasSizes
         ? toNumber(productData.smallQuantity) +
@@ -152,34 +150,20 @@ const EditProduct = ({ product, closeEditProduct, onProductUpdated }) => {
             required
             onChange={handleOnChange}
           />
-          <div className="grid grid-cols-2 grid-rows-1 gap-x-4">
-            <label htmlFor="costPrice" className="col-start-1 row-start-1">
-              Cost Price
-            </label>
-            <input
-              type="number"
-              id="costPrice"
-              placeholder="0"
-              min="0"
-              name="costPrice"
-              value={productData.costPrice}
-              className={`${inputBg} border-dashed border-2 rounded p-2 col-start-1 row-start-2 no-arrows`}
-              onChange={handleOnChange}
-            />
-            <label htmlFor="sellingPrice" className="col-start-2 row-start-1">
-              Selling Price
-            </label>
-            <input
-              type="number"
-              id="sellingPrice"
-              placeholder="0"
-              min="0"
-              name="sellingPrice"
-              value={productData.sellingPrice}
-              className={`${inputBg} border-dashed border-2 rounded p-2 col-start-2 row-start-2 no-arrows`}
-              onChange={handleOnChange}
-            />
-          </div>
+          <label htmlFor="price">Price:</label>
+          <input
+            type="number"
+            id="price"
+            placeholder="0.00"
+            min="0"
+            step="0.01"
+            inputMode="decimal"
+            name="price"
+            value={productData.price}
+            className={`${inputBg} border-dashed border-2 rounded p-2 no-arrows`}
+            required
+            onChange={handleOnChange}
+          />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
             <label className="flex items-center gap-2">
               <input

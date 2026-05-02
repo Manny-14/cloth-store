@@ -30,6 +30,7 @@ export const createEnsureStripeProductPriceHandler = ({
         productId = "",
         productName,
         description,
+        price,
         sellingPrice,
         images,
         stripeProductId: providedStripeProductId,
@@ -72,16 +73,16 @@ export const createEnsureStripeProductPriceHandler = ({
 
       const primaryImage = resolvedImages[0] || getPrimaryProductImage(firestoreProduct);
 
-      const resolvedSellingPrice = toNumber(
-        sellingPrice ?? firestoreProduct?.sellingPrice ?? firestoreProduct?.price
+      const resolvedPrice = toNumber(
+        price ?? sellingPrice ?? firestoreProduct?.price ?? firestoreProduct?.sellingPrice
       );
 
-      if (resolvedSellingPrice <= 0) {
-        return res.status(400).json({ error: "sellingPrice must be greater than 0" });
+      if (resolvedPrice <= 0) {
+        return res.status(400).json({ error: "price must be greater than 0" });
       }
 
       const normalizedCurrency = String(stripeCurrency || "usd").toLowerCase();
-      const unitAmount = Math.round(resolvedSellingPrice * 100);
+      const unitAmount = Math.round(resolvedPrice * 100);
 
       const existingStripeProductId = String(
         providedStripeProductId || firestoreProduct?.stripeProductId || ""

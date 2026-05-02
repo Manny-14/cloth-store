@@ -72,11 +72,11 @@ describe("ensureStripeProductPrice handler", () => {
     expect(res.body.error).toBe("Product not found");
   });
 
-  it("returns 400 when selling price resolves to zero", async () => {
+  it("returns 400 when price resolves to zero", async () => {
     const adminDb = createMockDb({
       p1: {
         productName: "Dress",
-        sellingPrice: 0,
+        price: 0,
       },
     });
 
@@ -102,7 +102,7 @@ describe("ensureStripeProductPrice handler", () => {
     await handler(req, res);
 
     expect(res.statusCode).toBe(400);
-    expect(res.body.error).toContain("sellingPrice");
+    expect(res.body.error).toContain("price");
   });
 
   it("creates Stripe product and price then patches Firestore", async () => {
@@ -110,7 +110,7 @@ describe("ensureStripeProductPrice handler", () => {
       p2: {
         productName: "Summer Tee",
         description: "Cotton",
-        sellingPrice: 29.99,
+        price: 29.99,
         images: ["https://img.test/tee.jpg"],
       },
     });

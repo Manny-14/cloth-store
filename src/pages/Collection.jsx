@@ -54,9 +54,9 @@ const Collection = () => {
     }
     // Sorting
     if (sortType === "low-high") {
-      filtered = filtered.sort((a, b) => Number(a.sellingPrice) - Number(b.sellingPrice));
+      filtered = filtered.sort((a, b) => Number(a.price) - Number(b.price));
     } else if (sortType === "high-low") {
-      filtered = filtered.sort((a, b) => Number(b.sellingPrice) - Number(a.sellingPrice));
+      filtered = filtered.sort((a, b) => Number(b.price) - Number(a.price));
     }
     setFilterProducts(filtered);
   }, [availableProducts, productTypes, search, showSearch, sortType]);
@@ -139,7 +139,7 @@ const Collection = () => {
                   id={item.id || item._id}
                   image={imageArray}
                   name={item.productName || item.name || "Untitled Product"}
-                  price={Number(item.sellingPrice || item.price || 0)}
+                  price={Number(item.price || 0)}
                 />
               );
             })
@@ -155,6 +155,5 @@ const Collection = () => {
 };
 
 export default Collection;
-
 
 

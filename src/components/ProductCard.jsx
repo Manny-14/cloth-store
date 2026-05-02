@@ -12,10 +12,6 @@ const ProductCard = ({
 }) => {
   const isSizeBasedProduct = product.hasSizes !== false;
   const imageBorder = theme === "dark" ? "border-slate-700" : "border-gray-200";
-  const costChip =
-    theme === "dark"
-      ? "bg-blue-900/60 text-blue-100"
-      : "bg-blue-100 text-blue-800";
   const priceChip =
     theme === "dark"
       ? "bg-emerald-900/60 text-emerald-100"
@@ -55,13 +51,9 @@ const ProductCard = ({
       </div>
       <div className="flex flex-col gap-1 mt-2">
         <div className="flex gap-2 text-xs mb-1">
-          <span className={`px-2 py-0.5 rounded ${costChip}`}>
-            Cost: {currency}
-            {product.costPrice}
-          </span>
           <span className={`px-2 py-0.5 rounded ${priceChip}`}>
             Price: {currency}
-            {product.sellingPrice}
+            {product.price}
           </span>
         </div>
         <div className="flex flex-wrap gap-2 text-xs">

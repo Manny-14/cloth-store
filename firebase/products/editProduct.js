@@ -1,4 +1,4 @@
-import { doc, updateDoc } from "firebase/firestore";
+import { deleteField, doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { ensureStripePriceForProduct } from "../../src/helper/stripe";
 
@@ -13,6 +13,8 @@ export const editProduct = async (productId, updatedFields) => {
 
     const payload = {
       ...updatedFields,
+      costPrice: deleteField(),
+      sellingPrice: deleteField(),
       stripeProductId: stripeSync?.stripeProductId || updatedFields?.stripeProductId || "",
       stripePriceId: stripeSync?.stripePriceId || updatedFields?.stripePriceId || "",
       stripeCurrency: stripeSync?.currency || updatedFields?.stripeCurrency || "usd",

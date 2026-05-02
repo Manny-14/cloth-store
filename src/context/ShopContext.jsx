@@ -469,7 +469,6 @@ const ShopContextProvider = (props) => {
         description: product.description || product.productDescription || "",
         price: parseNumber(product.price ?? product.sellingPrice ?? 0),
         sellingPrice: parseNumber(product.sellingPrice ?? product.price ?? 0),
-        costPrice: parseNumber(product.costPrice ?? product.price ?? 0),
         images: imageList,
         image: imageList,
         category: product.category || "general",

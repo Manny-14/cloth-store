@@ -37,7 +37,7 @@ const LatestCollection = () => {
               id={item._id || item.id}
               image={item.images || item.image}
               name={item.productName || item.name}
-              price={item.sellingPrice || item.price}
+              price={item.price}
             />
           ))}
         </div>
