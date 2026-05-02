@@ -1,4 +1,10 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
+import {
+    createUserWithEmailAndPassword,
+    sendPasswordResetEmail,
+    signInWithEmailAndPassword,
+    signOut,
+    updateProfile,
+} from "firebase/auth";
 import { auth, db } from "./firebase";
 import ROLE from "../src/helper/role";
 import { doc, setDoc } from "firebase/firestore";
@@ -47,6 +53,24 @@ export const doSignInWithEmailAndPassword = async (email, password) => {
             throw new Error("Too many sign-in attempts. Please wait a moment and try again.");
         }
         throw new Error("We couldn't sign you in right now. Please try again.");
+    }
+}
+
+export const doSendPasswordResetEmail = async (email) => {
+    try {
+        await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+        console.error("Error sending password reset email:", error.code, error.message);
+        if(error.code === "auth/invalid-email") {
+            throw new Error("Please enter a valid email address.");
+        }
+        if(error.code === "auth/too-many-requests") {
+            throw new Error("Too many reset attempts. Please wait a moment and try again.");
+        }
+        if(error.code === "auth/user-not-found") {
+            return;
+        }
+        throw new Error("We couldn't send a password reset email right now. Please try again.");
     }
 }
 
