@@ -2,8 +2,13 @@ import React, { useState } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import { toast } from 'react-toastify';
 import { FcGoogle } from "react-icons/fc";
-import { doSignInWithEmailAndPassword, doSignInWithGoogle } from '../../firebase/auth';
+import {
+  completeGoogleRedirectSignIn,
+  doSignInWithEmailAndPassword,
+  doSignInWithGoogle,
+} from '../../firebase/auth';
 import { logGoogleSignInFailure } from '../helper/authLogging';
+import { useAuth } from '../context/authContext';
 
 const Login = () => {
   const [user, setUser] = useState({
@@ -11,6 +16,7 @@ const Login = () => {
       password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [isCompletingGoogleRedirect, setIsCompletingGoogleRedirect] = useState(false);
 
   const onChangeHandler = (e) => {
       const {name, value} = e.target;
@@ -23,6 +29,7 @@ const Login = () => {
   };
 
   const { theme, navigate } = React.useContext(ShopContext);
+  const { currentUser, userLoggedIn, isResolvingRole } = useAuth();
   const inputClasses =
     theme === "dark"
       ? "bg-slate-900 border-gray-700 text-white placeholder:text-gray-400"
@@ -33,6 +40,42 @@ const Login = () => {
     theme === "dark"
       ? "border-gray-700 bg-slate-900 text-white hover:bg-slate-800"
       : "border-gray-300 bg-white text-black hover:bg-gray-50";
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const finishRedirectSignIn = async () => {
+      setIsCompletingGoogleRedirect(true);
+      try {
+        const googleUser = await completeGoogleRedirectSignIn();
+        if (googleUser) {
+          toast.success("Signed in with Google.");
+        }
+      } catch (error) {
+        if (isMounted) {
+          logGoogleSignInFailure(error, { page: "login" });
+          toast.error(error?.message || "We couldn't finish signing you in with Google.");
+        }
+      } finally {
+        if (isMounted) {
+          setIsCompletingGoogleRedirect(false);
+        }
+      }
+    };
+
+    finishRedirectSignIn();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!isResolvingRole && userLoggedIn) {
+      const isAdmin = String(currentUser?.role || "").toUpperCase() === "ADMIN";
+      navigate(isAdmin ? "/admin-panel/all-users" : "/");
+    }
+  }, [currentUser?.role, isResolvingRole, navigate, userLoggedIn]);
 
   const onSubmitHandler = async(e) => {
     e.preventDefault();
@@ -138,10 +181,11 @@ const Login = () => {
         <button
           type="button"
           onClick={onGoogleSignIn}
+          disabled={isCompletingGoogleRedirect}
           className={`flex w-full items-center justify-center gap-2 rounded border px-4 py-2 text-sm transition-colors ${googleButtonClasses}`}
         >
           <FcGoogle className="text-lg" aria-hidden="true" />
-          Continue with Google
+          {isCompletingGoogleRedirect ? "Finishing Google sign-in..." : "Continue with Google"}
         </button>
       </form>
     </div>

@@ -5,6 +5,7 @@ import {
     signInWithEmailAndPassword,
     signInWithPopup,
     signInWithRedirect,
+    getRedirectResult,
     signOut,
     updateProfile,
 } from "firebase/auth";
@@ -16,18 +17,6 @@ const createGoogleProvider = () => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: "select_account" });
     return provider;
-};
-
-const shouldUseRedirectForGoogle = () => {
-    if (typeof window === "undefined" || typeof navigator === "undefined") {
-        return false;
-    }
-
-    const mobileUserAgent = /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(navigator.userAgent || "");
-    const touchDevice = Number(navigator.maxTouchPoints || 0) > 0;
-    const narrowViewport = window.matchMedia?.("(max-width: 768px)")?.matches;
-
-    return mobileUserAgent || (touchDevice && narrowViewport);
 };
 
 const createGoogleAuthError = (error, fallbackMessage, phase) => {
@@ -121,13 +110,6 @@ export const doSendPasswordResetEmail = async (email) => {
 export const doSignInWithGoogle = async () => {
     try {
         const provider = createGoogleProvider();
-        const authMode = shouldUseRedirectForGoogle() ? "redirect" : "popup";
-
-        if (authMode === "redirect") {
-            await signInWithRedirect(auth, provider);
-            return { redirecting: true };
-        }
-
         const userCredential = await signInWithPopup(auth, provider);
         const user = userCredential.user;
         try {
@@ -150,24 +132,68 @@ export const doSignInWithGoogle = async () => {
             throw createGoogleAuthError(
                 error,
                 "An account already exists with this email. Please sign in with the original method.",
-                shouldUseRedirectForGoogle() ? "redirect" : "popup"
+                "popup"
             );
         }
         if(error.code === "auth/unauthorized-domain") {
             throw createGoogleAuthError(
                 error,
                 "Google sign-in is not enabled for this site address yet. Please try the launch domain or contact support.",
-                shouldUseRedirectForGoogle() ? "redirect" : "popup"
+                "popup"
             );
         }
-        if(error.code === "auth/popup-blocked") {
+        if(
+            error.code === "auth/popup-blocked" ||
+            error.code === "auth/operation-not-supported-in-this-environment" ||
+            error.code === "auth/web-storage-unsupported"
+        ) {
             await signInWithRedirect(auth, createGoogleProvider());
             return { redirecting: true };
         }
         throw createGoogleAuthError(
             error,
             "We couldn't sign you in with Google right now. Please try again.",
-            shouldUseRedirectForGoogle() ? "redirect" : "popup"
+            "popup"
+        );
+    }
+}
+
+export const completeGoogleRedirectSignIn = async () => {
+    try {
+        const result = await getRedirectResult(auth);
+        if (!result?.user) return null;
+
+        try {
+            await ensureUserProfileDocument(result.user);
+        } catch (profileError) {
+            throw createGoogleAuthError(
+                profileError,
+                "We signed you in with Google, but couldn't finish setting up your account. Please try again.",
+                "profile_document"
+            );
+        }
+
+        return result.user;
+    } catch (error) {
+        console.error("Error completing Google redirect sign-in:", error.code, error.message);
+        if(error.code === "auth/account-exists-with-different-credential") {
+            throw createGoogleAuthError(
+                error,
+                "An account already exists with this email. Please sign in with the original method.",
+                "redirect"
+            );
+        }
+        if(error.code === "auth/unauthorized-domain") {
+            throw createGoogleAuthError(
+                error,
+                "Google sign-in is not enabled for this site address yet. Please try the launch domain or contact support.",
+                "redirect"
+            );
+        }
+        throw createGoogleAuthError(
+            error,
+            "We couldn't finish signing you in with Google. Please try again.",
+            "redirect"
         );
     }
 }
