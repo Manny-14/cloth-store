@@ -82,8 +82,8 @@ stripe trigger checkout.session.completed
 
 - Call `POST /create-checkout-session` with `{ lineItems: [{ priceId, quantity }], metadata?, customerEmail?, successUrl?, cancelUrl? }`.
 - Redirect to the returned `url` (or use Stripe.js with `sessionId`).
-- The webhook at `/webhook` verifies signatures and is the place to persist orders / adjust inventory (marked TODO in `server/index.js`).
-- The server now supports `POST /checkout/finalize-session` to finalize paid sessions server-side (idempotent by `stripeSessionId`).
+- The webhook at `/webhook` verifies signatures and finalizes paid checkout sessions.
+- The server supports `POST /checkout/finalize-session` to finalize paid sessions server-side (idempotent by `stripeSessionId`).
 - The webhook `checkout.session.completed` also triggers the same finalization path.
 
 ### Notes
