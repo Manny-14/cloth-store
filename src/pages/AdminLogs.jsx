@@ -26,12 +26,29 @@ const severityStyles = {
   critical: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200",
 };
 
+const eventTypeFilters = [
+  { value: "all", label: "All error types", prefixes: [] },
+  { value: "auth", label: "Auth", prefixes: ["auth."] },
+  { value: "checkout", label: "Checkout", prefixes: ["checkout."] },
+  { value: "order", label: "Orders", prefixes: ["order.", "orders.", "admin.order"] },
+  { value: "product", label: "Products", prefixes: ["product.", "products.", "admin.product"] },
+];
+
+const desktopMediaQuery = "(min-width: 1024px)";
+
+const getIsDesktop = () => {
+  if (typeof window === "undefined") return true;
+  return window.matchMedia(desktopMediaQuery).matches;
+};
+
 const AdminLogs = () => {
   const { theme } = React.useContext(ShopContext);
   const [logs, setLogs] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
   const [severityFilter, setSeverityFilter] = React.useState("all");
+  const [eventTypeFilter, setEventTypeFilter] = React.useState("all");
+  const [isDesktop, setIsDesktop] = React.useState(getIsDesktop);
 
   const mutedText = theme === "dark" ? "text-gray-400" : "text-gray-500";
   const inputClasses =
@@ -45,7 +62,7 @@ const AdminLogs = () => {
     try {
       const result = await getAdminLogs({ max: 150 });
       setLogs(result);
-    } catch (err) {
+    } catch {
       setError("Unable to load logs right now.");
     } finally {
       setLoading(false);
@@ -53,13 +70,58 @@ const AdminLogs = () => {
   }, []);
 
   React.useEffect(() => {
-    loadLogs();
-  }, [loadLogs]);
+    const mediaQuery = window.matchMedia(desktopMediaQuery);
+    const handleChange = (event) => setIsDesktop(event.matches);
+
+    setIsDesktop(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
+  React.useEffect(() => {
+    if (isDesktop) {
+      loadLogs();
+      return;
+    }
+
+    setLoading(false);
+    setError("");
+  }, [isDesktop, loadLogs]);
 
   const filteredLogs = React.useMemo(() => {
-    if (severityFilter === "all") return logs;
-    return logs.filter((log) => String(log.severity).toLowerCase() === severityFilter);
-  }, [logs, severityFilter]);
+    const selectedEventType = eventTypeFilters.find(({ value }) => value === eventTypeFilter);
+
+    return logs.filter((log) => {
+      const eventName = String(log.event || "").toLowerCase();
+      const matchesSeverity =
+        severityFilter === "all" || String(log.severity).toLowerCase() === severityFilter;
+      const matchesEventType =
+        !selectedEventType?.prefixes.length ||
+        selectedEventType.prefixes.some((prefix) => eventName.startsWith(prefix));
+
+      return matchesSeverity && matchesEventType;
+    });
+  }, [logs, severityFilter, eventTypeFilter]);
+
+  if (!isDesktop) {
+    return (
+      <div className="p-4 flex flex-col gap-4">
+        <Title text1="ADMIN" text2="LOGS" />
+        <div className="border rounded-lg p-5 border-gray-200 dark:border-gray-800">
+          <p className="text-sm font-semibold">Admin Logs are available on desktop only.</p>
+          <p className={`mt-1 text-sm ${mutedText}`}>
+            Use a laptop or desktop screen to review platform errors and warnings.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 flex flex-col gap-6">
@@ -71,6 +133,17 @@ const AdminLogs = () => {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
+          <select
+            value={eventTypeFilter}
+            onChange={(event) => setEventTypeFilter(event.target.value)}
+            className={`border rounded px-3 py-1 text-sm ${inputClasses}`}
+          >
+            {eventTypeFilters.map((eventType) => (
+              <option key={eventType.value} value={eventType.value}>
+                {eventType.label}
+              </option>
+            ))}
+          </select>
           <select
             value={severityFilter}
             onChange={(event) => setSeverityFilter(event.target.value)}
@@ -121,7 +194,7 @@ const AdminLogs = () => {
               {log.message && <p className={`text-sm ${mutedText}`}>{log.message}</p>}
             </div>
             {log.context && (
-              <pre className={`text-xs rounded bg-slate-100 dark:bg-slate-900 p-2 ${mutedText}`}>
+              <pre className={`text-xs rounded bg-slate-100 dark:bg-slate-900 p-2 overflow-x-auto ${mutedText}`}>
 {JSON.stringify(log.context, null, 2)}
               </pre>
             )}
