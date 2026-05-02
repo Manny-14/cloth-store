@@ -1,13 +1,15 @@
 import {
+    GoogleAuthProvider,
     createUserWithEmailAndPassword,
     sendPasswordResetEmail,
     signInWithEmailAndPassword,
+    signInWithPopup,
     signOut,
     updateProfile,
 } from "firebase/auth";
 import { auth, db } from "./firebase";
 import ROLE from "../src/helper/role";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export const doCreateUserWithEmailAndPassword = async (email, password, name) => { // custom function to create user with email and password
     try {
@@ -71,6 +73,39 @@ export const doSendPasswordResetEmail = async (email) => {
             return;
         }
         throw new Error("We couldn't send a password reset email right now. Please try again.");
+    }
+}
+
+export const doSignInWithGoogle = async () => {
+    try {
+        const provider = new GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        const userCredential = await signInWithPopup(auth, provider);
+        const user = userCredential.user;
+        const userRef = doc(db, "users", user.uid);
+        const existingUser = await getDoc(userRef);
+
+        if (!existingUser.exists()) {
+            await setDoc(userRef, {
+                displayName: user.displayName || "",
+                email: user.email || "",
+                role: ROLE.GENERAL
+            });
+        }
+
+        return user;
+    } catch (error) {
+        console.error("Error signing in with Google:", error.code, error.message);
+        if(error.code === "auth/popup-closed-by-user" || error.code === "auth/cancelled-popup-request") {
+            throw new Error("Google sign-in was canceled.");
+        }
+        if(error.code === "auth/account-exists-with-different-credential") {
+            throw new Error("An account already exists with this email. Please sign in with the original method.");
+        }
+        if(error.code === "auth/popup-blocked") {
+            throw new Error("Your browser blocked the Google sign-in popup. Please allow popups and try again.");
+        }
+        throw new Error("We couldn't sign you in with Google right now. Please try again.");
     }
 }
 

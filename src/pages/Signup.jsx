@@ -1,7 +1,8 @@
 import React from 'react'
 import { useState } from 'react';
 import { ShopContext } from '../context/ShopContext';
-import { doCreateUserWithEmailAndPassword } from '../../firebase/auth';
+import { FcGoogle } from "react-icons/fc";
+import { doCreateUserWithEmailAndPassword, doSignInWithGoogle } from '../../firebase/auth';
 import { toast } from 'react-toastify';
 import { supportTemplates } from '../helper/support';
 const Signup = () => {
@@ -33,6 +34,10 @@ const Signup = () => {
         : "bg-white border-gray-800 text-black placeholder:text-gray-500";
     const toggleTextColor = theme === "dark" ? "text-gray-300" : "text-gray-600";
     const dividerColor = theme === "dark" ? "bg-gray-200" : "bg-gray-800";
+    const googleButtonClasses =
+      theme === "dark"
+        ? "border-gray-700 bg-slate-900 text-white hover:bg-slate-800"
+        : "border-gray-300 bg-white text-black hover:bg-gray-50";
     
     const onSubmitHandler = async (e) => {
         e.preventDefault();
@@ -48,8 +53,22 @@ const Signup = () => {
         }
     };
 
+    const onGoogleSignIn = async () => {
+        try {
+            await doSignInWithGoogle();
+            toast.success("Signed in with Google.");
+            navigate('/');
+        } catch (error) {
+            if (error?.message === "Google sign-in was canceled.") {
+                toast.info(error.message);
+                return;
+            }
+            toast.error(error?.message || "We couldn't sign you in with Google right now.");
+        }
+    };
+
   return (
-    <div className="flex items-center justify-center h-screen">
+    <div className="flex min-h-[80vh] items-center justify-center py-10">
       <form
         onSubmit={onSubmitHandler}
         className="flex flex-col items-center w-[90%] sm:max-w-96 gap-4"
@@ -135,6 +154,19 @@ const Signup = () => {
           } font-light px-8 py-2 mt-4 rounded`}
         >
           Sign Up
+        </button>
+        <div className={`flex w-full items-center gap-3 text-xs ${toggleTextColor}`}>
+          <span className="h-px flex-1 bg-current opacity-30" />
+          <span>or</span>
+          <span className="h-px flex-1 bg-current opacity-30" />
+        </div>
+        <button
+          type="button"
+          onClick={onGoogleSignIn}
+          className={`flex w-full items-center justify-center gap-2 rounded border px-4 py-2 text-sm transition-colors ${googleButtonClasses}`}
+        >
+          <FcGoogle className="text-lg" aria-hidden="true" />
+          Continue with Google
         </button>
       </form>
     </div>
