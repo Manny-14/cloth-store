@@ -9,6 +9,8 @@ const ProductCard = ({
   theme = "light",
   currency = "$",
   isSoldOut = false,
+  isArchived = false,
+  onRestore,
 }) => {
   const isSizeBasedProduct = product.hasSizes !== false;
   const imageBorder = theme === "dark" ? "border-slate-700" : "border-gray-200";
@@ -29,22 +31,26 @@ const ProductCard = ({
           : "bg-slate-900 text-white border-slate-700"
       }`}
     >
-      <div className="flex gap-4 items-center">
+      <div className="flex gap-3 sm:gap-4 items-center min-w-0">
         <img
           src={product.images && product.images[0]}
           alt={product.productName}
-          className={`w-24 h-24 object-cover rounded-md border ${imageBorder}`}
+          className={`w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-md border ${imageBorder}`}
         />
-        <div className="flex-1">
-          <h3 className="font-semibold text-lg line-clamp-2">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-base sm:text-lg line-clamp-2">
             {product.productName}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-300 line-clamp-1">
             {product.category} &bull; {product.type}
           </p>
-          {isSoldOut && (
-            <p className="text-xs uppercase font-semibold text-red-500 mt-1">
-              Sold Out
+          {(isArchived || isSoldOut) && (
+            <p
+              className={`text-xs uppercase font-semibold mt-1 ${
+                isArchived ? "text-amber-600 dark:text-amber-400" : "text-red-500"
+              }`}
+            >
+              {isArchived ? "Archived" : "Sold Out"}
             </p>
           )}
         </div>
@@ -80,21 +86,29 @@ const ProductCard = ({
         </div>
       </div>
       <p className="text-xs mt-2 line-clamp-2">{product.description}</p>
-      <div className="flex gap-2 mt-3">
+      <div className="flex flex-wrap gap-2 mt-3">
         {onEdit && (
           <button
-            className="px-3 py-1 rounded bg-yellow-400 text-black text-xs hover:bg-yellow-500"
+            className="flex-1 sm:flex-none px-3 py-2 sm:py-1 rounded bg-yellow-400 text-black text-xs hover:bg-yellow-500"
             onClick={() => onEdit(product)}
           >
             Edit
           </button>
         )}
-        {onDelete && (
+        {isArchived && onRestore && (
           <button
-            className="px-3 py-1 rounded bg-red-500 text-white text-xs hover:bg-red-600"
+            className="flex-1 sm:flex-none px-3 py-2 sm:py-1 rounded bg-green-600 text-white text-xs hover:bg-green-700"
+            onClick={() => onRestore(product)}
+          >
+            Restore
+          </button>
+        )}
+        {!isArchived && onDelete && (
+          <button
+            className="flex-1 sm:flex-none px-3 py-2 sm:py-1 rounded bg-red-500 text-white text-xs hover:bg-red-600"
             onClick={() => onDelete(product)}
           >
-            Delete
+            Archive
           </button>
         )}
       </div>
@@ -109,6 +123,8 @@ ProductCard.propTypes = {
   theme: PropTypes.string,
   currency: PropTypes.string,
   isSoldOut: PropTypes.bool,
+  isArchived: PropTypes.bool,
+  onRestore: PropTypes.func,
 };
 
 export default ProductCard;

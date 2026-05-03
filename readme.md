@@ -2,7 +2,7 @@
 
 Frontend: React + Vite + Firebase (Firestore/Auth)
 
-## Stripe checkout server (new)
+## Stripe checkout server
 
 Located in `server/` — a minimal Express server that creates Stripe Checkout Sessions and verifies webhooks. Use Stripe **test keys only** unless you intend to go live.
 
@@ -53,6 +53,8 @@ CLIENT_ORIGIN=http://localhost:5173,http://<TAILSCALE_IP>:5173
 VITE_STRIPE_SERVER_URL=http://<TAILSCALE_IP>:4242
 ```
 
+Do not put `VITE_STRIPE_SERVER_URL` in `server/.env`; Vite only reads it from the frontend env file.
+
 4. Run frontend with host binding:
 
 ```bash
@@ -71,7 +73,7 @@ http://<TAILSCALE_IP>:5173/Clothify-React/
 http://<TAILSCALE_IP>:4242/health
 ```
 
-4) Forward webhooks in test mode (optional but recommended)
+7. Forward webhooks in test mode (optional but recommended):
 
 ```bash
 stripe listen --forward-to http://localhost:4242/webhook
@@ -82,15 +84,15 @@ stripe trigger checkout.session.completed
 
 - Call `POST /create-checkout-session` with `{ lineItems: [{ priceId, quantity }], metadata?, customerEmail?, successUrl?, cancelUrl? }`.
 - Redirect to the returned `url` (or use Stripe.js with `sessionId`).
-- The webhook at `/webhook` verifies signatures and is the place to persist orders / adjust inventory (marked TODO in `server/index.js`).
-- The server now supports `POST /checkout/finalize-session` to finalize paid sessions server-side (idempotent by `stripeSessionId`).
+- The webhook at `/webhook` verifies signatures and finalizes paid checkout sessions.
+- The server supports `POST /checkout/finalize-session` to finalize paid sessions server-side (idempotent by `stripeSessionId`).
 - The webhook `checkout.session.completed` also triggers the same finalization path.
 
 ### Notes
 
 - Keep secret keys out of the frontend. Only the publishable key belongs client-side.
 - Restrict `ALLOWED_PRICE_IDS` so only your intended prices can be used.
-- For production, set strong CORS and host on a server you control; avoid exposing this server publicly with test keys.
+- For production, set `CLIENT_ORIGIN` to the real launch domain, host the server on a domain the frontend can reach, and avoid exposing this server publicly with test keys.
 - Admin delivery updates are now protected at `POST /admin/orders/:orderId/delivery` and require:
 	- Firebase ID token in `Authorization: Bearer <token>`
 	- user role `ADMIN` in Firestore `users/{uid}`
@@ -110,9 +112,12 @@ Go-live checklist:
 	- test IDs (`price_...`) are not reusable in live mode
 4. Set production frontend origin:
 	- `CLIENT_ORIGIN=https://your-domain.com`
-5. Keep `ALLOWED_PRICE_IDS` populated with your live price IDs
-6. Confirm success/cancel URLs resolve correctly for your deployed app
-7. Run one real low-value payment and confirm:
+5. Set frontend API URL:
+	- `VITE_STRIPE_SERVER_URL=https://your-server-domain.com`
+6. Add the launch domain in Firebase Authentication authorized domains
+7. Keep `ALLOWED_PRICE_IDS` populated with your live price IDs
+8. Confirm success/cancel URLs resolve correctly for your deployed app
+9. Run one real low-value payment and confirm:
 	- Checkout completes
 	- `/checkout/session` returns expected metadata
 	- order is created once (idempotency check)
@@ -154,6 +159,52 @@ Products are split into two inventory models:
 - **Non-sized products**: use this for one-size or measurement-specific items, such as towels, towel sets, jewelry, accessories, and similar goods. Stock is tracked as one total quantity.
 
 For towels and other measurement-specific products, keep them as non-sized products and include the specific measurement in the product title or description, for example `Embroidered Towel Set 27x54`. This avoids making dimensions look like apparel size choices while still showing customers the exact product size before purchase.
+
+## Launch data reset plan
+
+Use this when moving from test data to the launch catalog. Do not run delete scripts casually; confirm the target Firebase project and Stripe mode first.
+
+### Firestore collections in use
+
+- `products` — catalog, stock, archive status, image URLs, Stripe product/price IDs.
+- `orders` — customer orders, checkout/session metadata, delivery status, dispute metadata.
+- `users` — app user profiles and roles. Preserve this unless you are intentionally rebuilding accounts.
+- `adminLogs` — operational warnings/errors shown in the desktop Admin Logs page.
+
+Customer carts are stored in each browser's `localStorage` as `cartItems`, not in Firestore.
+
+### Usually clear before launch
+
+- Delete test `orders` so the admin order list starts clean.
+- Delete test `products` if replacing the full catalog.
+- Clear `adminLogs` after final smoke testing if you want a clean launch log.
+- Recreate or sync launch products using live Stripe product/price IDs if switching to live mode.
+
+### Usually preserve
+
+- Firebase Auth users you still need.
+- Firestore `users` documents for admin/vendor access.
+- Cloudinary images you intend to reuse for the launch catalog.
+- Firebase/Auth/Stripe configuration, except for replacing test Stripe keys and webhook secrets with live values.
+
+### Existing local reset scripts
+
+The local-only `server/scripts/` utilities expect `FIREBASE_SERVICE_ACCOUNT_KEY_PATH` in `server/.env` and require explicit confirmation flags.
+
+From `server/`:
+
+```bash
+CONFIRM_DELETE_ALL_ORDERS=true node scripts/deleteAllOrders.js
+CONFIRM_DELETE_ALL_PRODUCTS=true node scripts/deleteAllProducts.js
+```
+
+After deleting/recreating products, run the Stripe price sync only against the intended Stripe mode:
+
+```bash
+node scripts/syncStripePrices.js
+```
+
+For `adminLogs`, use the Firebase Console unless a dedicated delete script is added. Do not delete the `users` collection as part of the normal launch reset.
 
 ### Local-only utility scripts
 

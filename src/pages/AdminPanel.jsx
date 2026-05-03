@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import { ShopContext } from '../context/ShopContext';
@@ -13,17 +13,11 @@ const AdminPanel = () => {
 
     const { currentUser } = useAuth();
 
-    // Guard: if user is null (e.g. just logged out), bail before rendering
-    // and let the route tree in App.jsx handle the redirect.
-    if (!currentUser) {
-      return null;
-    }
-
     useEffect(() => {
-        if (currentUser?.role !== "ADMIN") {
+        if (currentUser && currentUser.role !== "ADMIN") {
             navigate("/")
         }
-    }, [currentUser])
+    }, [currentUser, navigate])
 
     // Derive active page from the current URL path
     const pathSegment = location.pathname.split('/').pop();
@@ -59,6 +53,14 @@ const AdminPanel = () => {
       { key: 'admin-logs', label: 'Admin Logs', to: '/admin-panel/admin-logs' },
     ];
 
+    const mobileNavLinks = navLinks.filter(({ key }) => key !== 'admin-logs');
+
+    // Guard: if user is null (e.g. just logged out), bail before rendering
+    // and let the route tree in App.jsx handle the redirect.
+    if (!currentUser) {
+      return null;
+    }
+
   return (
     <div>
       {/* ─── Desktop nav ─── */}
@@ -83,7 +85,7 @@ const AdminPanel = () => {
             <Link
               key={key}
               to={to}
-              className={`pb-1 transition-all ${
+              className={`pb-1 transition-all ${key === 'admin-logs' ? 'hidden lg:inline' : ''} ${
                 activePage === key
                   ? `font-semibold border-b-2 ${activeBorder}`
                   : 'hover:opacity-80'
@@ -140,7 +142,7 @@ const AdminPanel = () => {
         {/* Dropdown menu */}
         {menuOpen && (
           <div className={`mt-3 rounded-lg border ${theme === 'dark' ? 'border-gray-700 bg-gray-900' : 'border-gray-200 bg-gray-50'} overflow-hidden`}>
-            {navLinks.map(({ key, label, to }) => (
+            {mobileNavLinks.map(({ key, label, to }) => (
               <Link
                 key={key}
                 to={to}

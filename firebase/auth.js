@@ -1,7 +1,46 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, updateProfile } from "firebase/auth";
+import {
+    GoogleAuthProvider,
+    createUserWithEmailAndPassword,
+    sendPasswordResetEmail,
+    signInWithEmailAndPassword,
+    signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
+    signOut,
+    updateProfile,
+} from "firebase/auth";
 import { auth, db } from "./firebase";
 import ROLE from "../src/helper/role";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+
+const createGoogleProvider = () => {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    return provider;
+};
+
+const createGoogleAuthError = (error, fallbackMessage, phase) => {
+    const authError = new Error(fallbackMessage);
+    authError.code = error?.code || "auth/unknown";
+    authError.provider = "google";
+    authError.phase = phase;
+    return authError;
+};
+
+export const ensureUserProfileDocument = async (user) => {
+    if (!user?.uid) return;
+
+    const userRef = doc(db, "users", user.uid);
+    const existingUser = await getDoc(userRef);
+
+    if (!existingUser.exists()) {
+        await setDoc(userRef, {
+            displayName: user.displayName || "",
+            email: user.email || "",
+            role: ROLE.GENERAL
+        });
+    }
+};
 
 export const doCreateUserWithEmailAndPassword = async (email, password, name) => { // custom function to create user with email and password
     try {
@@ -47,6 +86,115 @@ export const doSignInWithEmailAndPassword = async (email, password) => {
             throw new Error("Too many sign-in attempts. Please wait a moment and try again.");
         }
         throw new Error("We couldn't sign you in right now. Please try again.");
+    }
+}
+
+export const doSendPasswordResetEmail = async (email) => {
+    try {
+        await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+        console.error("Error sending password reset email:", error.code, error.message);
+        if(error.code === "auth/invalid-email") {
+            throw new Error("Please enter a valid email address.");
+        }
+        if(error.code === "auth/too-many-requests") {
+            throw new Error("Too many reset attempts. Please wait a moment and try again.");
+        }
+        if(error.code === "auth/user-not-found") {
+            return;
+        }
+        throw new Error("We couldn't send a password reset email right now. Please try again.");
+    }
+}
+
+export const doSignInWithGoogle = async () => {
+    try {
+        const provider = createGoogleProvider();
+        const userCredential = await signInWithPopup(auth, provider);
+        const user = userCredential.user;
+        try {
+            await ensureUserProfileDocument(user);
+        } catch (profileError) {
+            throw createGoogleAuthError(
+                profileError,
+                "We signed you in with Google, but couldn't finish setting up your account. Please try again.",
+                "profile_document"
+            );
+        }
+
+        return user;
+    } catch (error) {
+        console.error("Error signing in with Google:", error.code, error.message);
+        if(error.code === "auth/popup-closed-by-user" || error.code === "auth/cancelled-popup-request") {
+            throw createGoogleAuthError(error, "Google sign-in was canceled.", "popup");
+        }
+        if(error.code === "auth/account-exists-with-different-credential") {
+            throw createGoogleAuthError(
+                error,
+                "An account already exists with this email. Please sign in with the original method.",
+                "popup"
+            );
+        }
+        if(error.code === "auth/unauthorized-domain") {
+            throw createGoogleAuthError(
+                error,
+                "Google sign-in is not enabled for this site address yet. Please try the launch domain or contact support.",
+                "popup"
+            );
+        }
+        if(
+            error.code === "auth/popup-blocked" ||
+            error.code === "auth/operation-not-supported-in-this-environment" ||
+            error.code === "auth/web-storage-unsupported"
+        ) {
+            await signInWithRedirect(auth, createGoogleProvider());
+            return { redirecting: true };
+        }
+        throw createGoogleAuthError(
+            error,
+            "We couldn't sign you in with Google right now. Please try again.",
+            "popup"
+        );
+    }
+}
+
+export const completeGoogleRedirectSignIn = async () => {
+    try {
+        const result = await getRedirectResult(auth);
+        if (!result?.user) return null;
+
+        try {
+            await ensureUserProfileDocument(result.user);
+        } catch (profileError) {
+            throw createGoogleAuthError(
+                profileError,
+                "We signed you in with Google, but couldn't finish setting up your account. Please try again.",
+                "profile_document"
+            );
+        }
+
+        return result.user;
+    } catch (error) {
+        console.error("Error completing Google redirect sign-in:", error.code, error.message);
+        if(error.code === "auth/account-exists-with-different-credential") {
+            throw createGoogleAuthError(
+                error,
+                "An account already exists with this email. Please sign in with the original method.",
+                "redirect"
+            );
+        }
+        if(error.code === "auth/unauthorized-domain") {
+            throw createGoogleAuthError(
+                error,
+                "Google sign-in is not enabled for this site address yet. Please try the launch domain or contact support.",
+                "redirect"
+            );
+        }
+        throw createGoogleAuthError(
+            error,
+            "We couldn't finish signing you in with Google. Please try again.",
+            "redirect"
+        );
     }
 }
 

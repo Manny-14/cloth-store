@@ -1,9 +1,12 @@
 import React, { useContext, useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { auth } from "../../firebase/firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { getUserRole } from "../../firebase/user/getUserRole";
+import { ensureUserProfileDocument } from "../../firebase/auth";
 
 const AuthContext = React.createContext();
+const ADMIN_SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
 export function useAuth() {
     return useContext(AuthContext);
@@ -14,7 +17,6 @@ export function AuthProvider ({ children }) {
     const [loading, setLoading] = useState(true);
     const [isResolvingRole, setIsResolvingRole] = useState(false);
     const userLoggedIn = !!currentUser;
-    const ADMIN_SESSION_TIMEOUT_MS = 30 * 60 * 1000;
 
     // Fetch user role and set it in the currentUser object
     // isMounted variable to prevent memory leak if getUserRole is called after component is unmounted
@@ -24,6 +26,7 @@ export function AuthProvider ({ children }) {
             if (user) {
                 if (isMounted) setIsResolvingRole(true);
                 try {
+                    await ensureUserProfileDocument(user);
                     const userRole = await getUserRole(user.uid);
                     if (isMounted) {
                         const normalizedRole = String(userRole || "GENERAL").toUpperCase();
@@ -100,6 +103,8 @@ export function AuthProvider ({ children }) {
             {!loading && children}
         </AuthContext.Provider>
     );
-
-
 }
+
+AuthProvider.propTypes = {
+    children: PropTypes.node.isRequired,
+};

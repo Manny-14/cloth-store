@@ -6,8 +6,10 @@ import ProductCard from "../components/ProductCard";
 import EditProduct from "../components/EditProduct";
 import { ShopContext } from "../context/ShopContext";
 import { deleteProduct } from "../../firebase/products/deleteProduct";
+import { restoreProduct } from "../../firebase/products/restoreProduct";
 import { toast } from "react-toastify";
 import { createAdminLog } from "../../firebase/logs/createAdminLog";
+import { getTotalStockQuantity } from "../helper/inventory";
 
 const AllProducts = () => {
   const [openUploadProduct, setOpenUploadProduct] = useState(false);
@@ -23,6 +25,8 @@ const AllProducts = () => {
   } = React.useContext(ShopContext);
   const isDark = theme === "dark";
   const mutedText = isDark ? "text-gray-400" : "text-gray-500";
+  const isArchivedProduct = (product) =>
+    String(product?.status || "").toLowerCase() === "inactive";
 
   const handleEdit = (product) => {
     setEditProductData(product);
@@ -59,15 +63,55 @@ const AllProducts = () => {
       toast.error("Failed to delete product");
     }
   };
+
+  const handleRestore = async (product) => {
+    const productId = product.id || product._id;
+    if (!productId) {
+      toast.error("Missing product ID");
+      return;
+    }
+
+    const price = Number(product.price ?? product.sellingPrice ?? 0);
+    const stock = getTotalStockQuantity(product);
+    if (!Number.isFinite(price) || price <= 0 || stock <= 0) {
+      toast.error("Add a valid price and stock before restoring this product.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Restore "${product.productName || product.name}"? Please verify the price, stock, images, and product details before customers can buy it.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await restoreProduct(productId);
+      toast.success("Product restored");
+      refreshProducts();
+    } catch (error) {
+      console.error(error);
+      createAdminLog({
+        event: "admin.product_restore_failed",
+        severity: "warning",
+        source: "admin",
+        message: "Admin failed to restore an archived product.",
+        context: {
+          productId,
+        },
+      });
+      toast.error("Failed to restore product");
+    }
+  };
+
   const closeUploadProduct = () => setOpenUploadProduct(false);
   const closeEditProduct = () => {
     setOpenEditProduct(false);
     setEditProductData(null);
   };
   return (
-  <div className="p-4 h-[85vh] relative transition-colors duration-300">
+  <div className="min-h-[85vh] px-2 py-4 sm:p-4 relative transition-colors duration-300">
       {/* Static header and controls */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between gap-3 mb-4">
         <div className="text-xl">
           <Title text1={"ALL"} text2={"Products"} />
         </div>
@@ -84,7 +128,7 @@ const AllProducts = () => {
         />
       )}
 
-      <div className="my-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="my-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 pb-24">
         {productsLoading ? (
           <div className={`col-span-full text-center ${mutedText} text-lg py-10`}>
             Loading...
@@ -92,16 +136,22 @@ const AllProducts = () => {
         ) : productsError ? (
           <div className="col-span-full text-center text-red-500 text-lg py-10">{productsError}</div>
         ) : products && products.length > 0 ? (
-          products.map((product) => (
-            <ProductCard
-              key={product._id || product.id}
-              product={product}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              theme={theme}
-              isSoldOut={isSoldOut(product)}
-            />
-          ))
+          products.map((product) => {
+            const isArchived = isArchivedProduct(product);
+
+            return (
+              <ProductCard
+                key={product._id || product.id}
+                product={product}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onRestore={handleRestore}
+                theme={theme}
+                isArchived={isArchived}
+                isSoldOut={!isArchived && isSoldOut(product)}
+              />
+            );
+          })
         ) : (
           <div className={`col-span-full text-center ${mutedText} text-lg py-10`}>
             No products found.
@@ -111,7 +161,7 @@ const AllProducts = () => {
 
       {/* Fixed upload button */}
       <IoMdAddCircleOutline
-        className={`text-6xl fixed right-8 bottom-8 z-50 hover:scale-110 cursor-pointer ${
+        className={`text-5xl sm:text-6xl fixed right-5 sm:right-8 bottom-5 sm:bottom-8 z-50 hover:scale-110 cursor-pointer drop-shadow ${
           isDark ? "text-white" : "text-gray-900"
         }`}
         onClick={() => setOpenUploadProduct(true)}

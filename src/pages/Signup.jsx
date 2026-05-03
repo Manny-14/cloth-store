@@ -1,20 +1,26 @@
 import React from 'react'
 import { useState } from 'react';
 import { ShopContext } from '../context/ShopContext';
-import { doCreateUserWithEmailAndPassword } from '../../firebase/auth';
+import { FcGoogle } from "react-icons/fc";
+import {
+  completeGoogleRedirectSignIn,
+  doCreateUserWithEmailAndPassword,
+  doSignInWithGoogle,
+} from '../../firebase/auth';
 import { toast } from 'react-toastify';
-import { supportTemplates } from '../helper/support';
+import { logGoogleSignInFailure } from '../helper/authLogging';
+import { useAuth } from '../context/authContext';
 const Signup = () => {
 
-  const supportHref = supportTemplates.account();
     const [user, setUser] = useState({
         name: '',
         email: '',
         password: '',
         confirmPassword: ''
-    });
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isCompletingGoogleRedirect, setIsCompletingGoogleRedirect] = useState(false);
 
     const onChangeHandler = (e) => {
         const {name, value} = e.target;
@@ -27,12 +33,53 @@ const Signup = () => {
     };
 
     const { theme, navigate } = React.useContext(ShopContext);
+    const { currentUser, userLoggedIn, isResolvingRole } = useAuth();
     const inputClasses =
       theme === "dark"
         ? "bg-slate-900 border-gray-700 text-white placeholder:text-gray-400"
         : "bg-white border-gray-800 text-black placeholder:text-gray-500";
     const toggleTextColor = theme === "dark" ? "text-gray-300" : "text-gray-600";
     const dividerColor = theme === "dark" ? "bg-gray-200" : "bg-gray-800";
+    const googleButtonClasses =
+      theme === "dark"
+        ? "border-gray-700 bg-slate-900 text-white hover:bg-slate-800"
+        : "border-gray-300 bg-white text-black hover:bg-gray-50";
+
+    React.useEffect(() => {
+        let isMounted = true;
+
+        const finishRedirectSignIn = async () => {
+            setIsCompletingGoogleRedirect(true);
+            try {
+                const googleUser = await completeGoogleRedirectSignIn();
+                if (googleUser) {
+                    toast.success("Signed in with Google.");
+                }
+            } catch (error) {
+                if (isMounted) {
+                    logGoogleSignInFailure(error, { page: "signup" });
+                    toast.error(error?.message || "We couldn't finish signing you in with Google.");
+                }
+            } finally {
+                if (isMounted) {
+                    setIsCompletingGoogleRedirect(false);
+                }
+            }
+        };
+
+        finishRedirectSignIn();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    React.useEffect(() => {
+        if (!isResolvingRole && userLoggedIn) {
+            const isAdmin = String(currentUser?.role || "").toUpperCase() === "ADMIN";
+            navigate(isAdmin ? "/admin-panel/all-users" : "/");
+        }
+    }, [currentUser?.role, isResolvingRole, navigate, userLoggedIn]);
     
     const onSubmitHandler = async (e) => {
         e.preventDefault();
@@ -48,8 +95,27 @@ const Signup = () => {
         }
     };
 
+    const onGoogleSignIn = async () => {
+        try {
+            const result = await doSignInWithGoogle();
+            if (result?.redirecting) {
+                toast.info("Redirecting to Google sign-in...");
+                return;
+            }
+            toast.success("Signed in with Google.");
+            navigate('/');
+        } catch (error) {
+            if (error?.message === "Google sign-in was canceled.") {
+                toast.info(error.message);
+                return;
+            }
+            logGoogleSignInFailure(error, { page: "signup" });
+            toast.error(error?.message || "We couldn't sign you in with Google right now.");
+        }
+    };
+
   return (
-    <div className="flex items-center justify-center h-screen">
+    <div className="flex min-h-[80vh] items-center justify-center py-10">
       <form
         onSubmit={onSubmitHandler}
         className="flex flex-col items-center w-[90%] sm:max-w-96 gap-4"
@@ -113,12 +179,17 @@ const Signup = () => {
           </button>
         </div>
         <div className="w-full flex justify-between text-sm mt-[-10px]">
-            <a
-                href={supportHref}
+            <button
+                type="button"
+                onClick={() =>
+                    navigate('/forgot-password', {
+                        state: { email: user.email.trim() },
+                    })
+                }
                 className="cursor-pointer"
             >
-                Need account help?
-            </a>
+                Forgot password?
+            </button>
             <p
                 className="cursor-pointer"
                 onClick={(e) => {
@@ -135,6 +206,20 @@ const Signup = () => {
           } font-light px-8 py-2 mt-4 rounded`}
         >
           Sign Up
+        </button>
+        <div className={`flex w-full items-center gap-3 text-xs ${toggleTextColor}`}>
+          <span className="h-px flex-1 bg-current opacity-30" />
+          <span>or</span>
+          <span className="h-px flex-1 bg-current opacity-30" />
+        </div>
+        <button
+          type="button"
+          onClick={onGoogleSignIn}
+          disabled={isCompletingGoogleRedirect}
+          className={`flex w-full items-center justify-center gap-2 rounded border px-4 py-2 text-sm transition-colors ${googleButtonClasses}`}
+        >
+          <FcGoogle className="text-lg" aria-hidden="true" />
+          {isCompletingGoogleRedirect ? "Finishing Google sign-in..." : "Continue with Google"}
         </button>
       </form>
     </div>

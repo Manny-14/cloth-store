@@ -81,13 +81,17 @@ const Profile = () => {
                         Update Display Name
                     </button>
 
-                    {/** TODO: CREATE CHANGE PASSWORD FUNCTIONALITY */}
                     <button
                     className={`${
                         theme === 'light' ? 'bg-black text-white' : 'bg-white text-black'
                     } flex-1 font-light px-4 py-2.5 rounded active:scale-[0.98] transition-transform`}
+                    onClick={() =>
+                        navigate('/forgot-password', {
+                            state: { email: currentUser?.email || '' },
+                        })
+                    }
                     >
-                        Change Password
+                        Reset Password
                     </button>
                     </div>
                 </div> 

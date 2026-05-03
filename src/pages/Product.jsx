@@ -25,6 +25,10 @@ const Product = () => {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState("");
 
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [productId]);
+
   const normalizeProduct = React.useCallback(
     (product) => {
       if (!product) return null;
