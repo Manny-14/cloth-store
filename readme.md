@@ -64,7 +64,7 @@ npm run dev:host
 5. Open on phone:
 
 ```text
-http://<TAILSCALE_IP>:5173/Clothify-React/
+http://<TAILSCALE_IP>:5173/
 ```
 
 6. Backend health check from phone:
