@@ -12,6 +12,7 @@ import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { createFinalizePaidCheckoutSession } from "./lib/finalizeSession.js";
 import { createHandleDispute } from "./lib/handleDispute.js";
 import { createEnsureStripeProductPriceHandler } from "./lib/ensureStripeProductPrice.js";
+import { createClientDiagnosticHandler } from "./lib/clientDiagnostics.js";
 
 dotenv.config();
 
@@ -185,6 +186,16 @@ const adminUpdateLimiter = rateLimit({
   },
 });
 
+const clientDiagnosticLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many diagnostic reports. Please try again later.",
+  },
+});
+
 const requireAdminAuth = async (req, res, next) => {
   if (!adminAuth || !adminDb) {
     return res.status(503).json({
@@ -243,6 +254,12 @@ const ensureStripeProductPriceHandler = createEnsureStripeProductPriceHandler({
   stripeCurrency: STRIPE_CURRENCY,
 });
 
+const clientDiagnosticHandler = createClientDiagnosticHandler({
+  adminAuth,
+  adminDb,
+  FieldValue,
+});
+
 // CORS for the frontend
 app.use(
   cors({
@@ -276,6 +293,8 @@ app.use((req, res, next) => {
 app.get("/health", (_req, res) => {
   res.json({ ok: true, timestamp: new Date().toISOString() });
 });
+
+app.post("/client-diagnostics", clientDiagnosticLimiter, clientDiagnosticHandler);
 
 app.post("/create-checkout-session", checkoutLimiter, async (req, res) => {
   try {

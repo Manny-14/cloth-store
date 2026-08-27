@@ -2,9 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("firebase/firestore", () => {
   return {
-    addDoc: vi.fn(),
     collection: vi.fn((db, name) => ({ db, name })),
-    serverTimestamp: vi.fn(() => "server-timestamp"),
     getDocs: vi.fn(),
     query: vi.fn((...args) => args),
     orderBy: vi.fn((field, direction) => ({ field, direction })),
@@ -14,9 +12,14 @@ vi.mock("firebase/firestore", () => {
 
 vi.mock("../../../firebase/firebase", () => ({
   db: { name: "mock-db" },
+  auth: {
+    currentUser: {
+      getIdToken: vi.fn().mockResolvedValue("token_123"),
+    },
+  },
 }));
 
-import { addDoc, getDocs } from "firebase/firestore";
+import { getDocs } from "firebase/firestore";
 import { createAdminLog } from "../../../firebase/logs/createAdminLog";
 import { getAdminLogs } from "../../../firebase/logs/getAdminLogs";
 
@@ -26,6 +29,8 @@ describe("admin log helpers", () => {
   });
 
   it("skips log writes when event is missing", async () => {
+    globalThis.fetch = vi.fn();
+
     await createAdminLog({
       event: "",
       severity: "warning",
@@ -33,11 +38,11 @@ describe("admin log helpers", () => {
       message: "",
     });
 
-    expect(addDoc).not.toHaveBeenCalled();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
   });
 
-  it("writes normalized admin logs", async () => {
-    addDoc.mockResolvedValue({ id: "log-1" });
+  it("sends normalized diagnostics to the backend", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true, status: 204 });
 
     await createAdminLog({
       event: "checkout.session_create_failed",
@@ -51,15 +56,17 @@ describe("admin log helpers", () => {
       },
     });
 
-    expect(addDoc).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
 
-    const [, payload] = addDoc.mock.calls[0];
+    const [url, request] = globalThis.fetch.mock.calls[0];
+    const payload = JSON.parse(request.body);
+    expect(url).toMatch(/\/client-diagnostics$/);
+    expect(request.headers.Authorization).toBe("Bearer token_123");
     expect(payload.event).toBe("checkout.session_create_failed");
     expect(payload.severity).toBe("critical");
     expect(payload.source).toBe("client");
     expect(payload.message).toBe("Stripe checkout failed");
     expect(payload.context).toEqual({ productId: "prod_1", count: 0 });
-    expect(payload.createdAt).toBe("server-timestamp");
   });
 
   it("returns mapped admin logs", async () => {

@@ -1,5 +1,7 @@
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { db } from "../firebase";
+import { auth } from "../firebase";
+
+const STRIPE_SERVER_URL =
+  import.meta.env.VITE_STRIPE_SERVER_URL?.trim() || "http://localhost:4242";
 
 const normalizeValue = (value) => {
   if (value === undefined || value === null) return undefined;
@@ -26,15 +28,26 @@ export const createAdminLog = async ({
   if (!normalizedEvent) return;
 
   try {
-    await addDoc(collection(db, "adminLogs"), {
-      event: normalizedEvent,
-      severity: normalizeValue(severity) || "info",
-      source: normalizeValue(source) || "client",
-      message: normalizeValue(message) || "",
-      context: compactObject(context),
-      createdAt: serverTimestamp(),
+    const idToken = await auth.currentUser?.getIdToken();
+    const response = await fetch(`${STRIPE_SERVER_URL}/client-diagnostics`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+      },
+      body: JSON.stringify({
+        event: normalizedEvent,
+        severity: normalizeValue(severity) || "info",
+        source: normalizeValue(source) || "client",
+        message: normalizeValue(message) || "",
+        context: compactObject(context),
+      }),
     });
+
+    if (!response.ok) {
+      throw new Error(`Diagnostic endpoint returned ${response.status}`);
+    }
   } catch (error) {
-    console.error("Failed to write admin log", error);
+    console.warn("Failed to send admin diagnostic", error);
   }
 };
