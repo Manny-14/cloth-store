@@ -66,6 +66,37 @@ describe("server routes", () => {
     expect(typeof body.timestamp).toBe("string");
   });
 
+  it("POST /client-diagnostics rejects unknown events", async () => {
+    const response = await fetch(`${baseUrl}/client-diagnostics`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ event: "unknown.event" }),
+    });
+
+    const body = await response.json();
+    expect(response.status).toBe(400);
+    expect(body.error).toBe("Unsupported diagnostic event");
+  });
+
+  it("POST /client-diagnostics reports unavailable configuration without writing", async () => {
+    const response = await fetch(`${baseUrl}/client-diagnostics`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        event: "auth.google_sign_in_failed",
+        context: { page: "login" },
+      }),
+    });
+
+    const body = await response.json();
+    expect(response.status).toBe(503);
+    expect(body.error).toContain("not configured");
+  });
+
   it("POST /checkout/session rejects missing sessionId", async () => {
     const response = await fetch(`${baseUrl}/checkout/session`, {
       method: "POST",

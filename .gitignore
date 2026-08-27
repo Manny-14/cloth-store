@@ -22,3 +22,7 @@ server/scripts/
 
 # sample products
 sample_products_images/
+
+# Local operator notes
+docs/OPERATIONS.md
+docs/ENVIRONMENT_SEPARATION_PLAN.md

@@ -51,6 +51,7 @@ const App = () => {
       >
         <ToastContainer position="top-center" autoClose={2800} theme={theme} />
         <Routes>
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/admin-panel" element={<AdminPanel />} >
             <Route path="all-users" element={<AllUsers />} />
             <Route path="all-products" element={<AllProducts />} />
