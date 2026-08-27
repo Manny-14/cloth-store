@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 
 const Profile = () => {
     const { currentUser } = useAuth();
+    const navigate = useNavigate();
     const { theme } = React.useContext(ShopContext)
     const inputClasses =
         theme === "dark"
